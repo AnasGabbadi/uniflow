@@ -1,0 +1,35 @@
+# --- Secrets : ne jamais versionner ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Java / Maven ---
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+hs_err_pid*
+
+# --- Front-end / Node ---
+node_modules/
+frontend/dist/
+frontend/build/
+coverage/
+.angular/
+
+# --- IDE ---
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# --- Logs et fichiers temporaires ---
+*.log
+*.tmp
+logs/
+
+# --- Système ---
+.DS_Store
+Thumbs.db
