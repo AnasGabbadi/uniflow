@@ -21,9 +21,13 @@ L'objectif est de livrer une application fonctionnelle **et** une chaîne DevOps
 
 ```
 uniflow/
-├── src/                  # Code Spring Boot (créé par IP-9)
-├── pom.xml               # Build Maven (créé par IP-9)
+├── backend/              # API Spring Boot (créée par IP-9)
+│   ├── src/
+│   ├── pom.xml
+│   ├── Dockerfile        # (IP-11)
+│   └── .dockerignore
 ├── frontend/             # Application front-end (créée par IP-16)
+│   └── Dockerfile        # (IP-17)
 ├── kubernetes/           # Manifestes Kubernetes (sprint 3)
 ├── docs/
 │   ├── backlog/          # Export du backlog Jira
@@ -32,13 +36,13 @@ uniflow/
 │   ├── evidence/         # Captures et preuves (tests, pipelines, déploiements)
 │   └── reports/          # Rapport technique final
 ├── .github/              # Workflows CI/CD et modèle de Pull Request
-├── Dockerfile            # (IP-11)
-├── compose.yaml          # (IP-14)
+├── compose.yaml          # Lance back-end + front-end + PostgreSQL (IP-14)
 ├── .env.example          # Modèle des variables d'environnement (IP-13)
+├── .gitignore
 └── README.md
 ```
 
-> Le code Spring Boot est à la racine, comme dans l'arborescence demandée par le cahier des charges (`Dockerfile`, `compose.yaml`, `pom.xml`, `src/`).
+> Le back-end et le front-end sont séparés pour que chaque binôme travaille dans son dossier. Les fichiers demandés par le cahier des charges (`Dockerfile`, `.dockerignore`, `pom.xml`, `src/`) se trouvent dans `backend/`, et `compose.yaml` à la racine orchestre l'ensemble.
 
 ## Démarrage rapide
 
@@ -52,6 +56,8 @@ docker compose up --build
 ```
 
 ## Règles de travail
+
+Le workflow complet (cycle d'une fonctionnalité, revues, releases, hotfix) est décrit dans [docs/git-workflow.md](docs/git-workflow.md).
 
 ### Branches
 - `main` : versions stables et livrées (protégée).
@@ -74,13 +80,3 @@ Exemple : `IP-23 feat: ajouter la création d'un étudiant`
 ### Sécurité
 - Ne **jamais** versionner de mot de passe, de token ou de fichier `.env`.
 - Les secrets CI sont stockés dans **Settings → Secrets and variables → Actions**.
-
-## Équipe
-
-| Profil | Membre |
-|---|---|
-| Scrum Master | _à compléter_ |
-| Back-end 1 | _à compléter_ |
-| Back-end 2 | _à compléter_ |
-| Front-end 1 | _à compléter_ |
-| Front-end 2 | _à compléter_ |
