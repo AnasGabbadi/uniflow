@@ -1,4 +1,4 @@
-package com.isga.uniflow.entity;
+package com.isga.uniflow.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;

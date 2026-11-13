@@ -1,4 +1,4 @@
-package com.isga.uniflow.entity;
+package com.isga.uniflow.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
