@@ -39,7 +39,7 @@ uniflow/
 │   ├── evidence/         # Captures et preuves (tests, pipelines, déploiements)
 │   └── reports/          # Rapport technique final
 ├── .github/              # Workflow CI et modèle de Pull Request
-├── compose.yaml          # Lance l'API et PostgreSQL (IP-14), puis le front (IP-17)
+├── compose.yaml          # Lance PostgreSQL, l'API et le front (IP-14, IP-17)
 ├── .env.example          # Modèle des variables d'environnement (IP-13)
 ├── .gitignore
 └── README.md
@@ -85,33 +85,42 @@ Le fichier `.env` est ignoré par Git : il ne doit jamais être commité.
 | `SERVER_PORT` | non (`8080`) | Port de l'API dans le conteneur |
 | `APP_PORT` | non (`8080`) | Port de l'API sur votre PC |
 | `APP_IMAGE` | non (`uniflow:latest`) | Nom de l'image Docker de l'API |
+| `FRONTEND_PORT` | non (`4200`) | Port du front-end sur votre PC |
 
-### 3. Lancer l'API et PostgreSQL
+### 3. Lancer toute l'application
 
 ```bash
 docker compose up --build -d
-docker compose ps        # db : healthy, app : Up
+docker compose ps        # db : healthy, app : Up, frontend : Up
 ```
 
-Vérification : http://localhost:8080/actuator/health doit répondre `{"status":"UP"}`.
+| Service | Adresse | Vérification |
+|---|---|---|
+| Front-end (Angular servi par Nginx) | http://localhost:4200 | La page UniFlow s'affiche |
+| API (Spring Boot) | http://localhost:8080 | http://localhost:8080/actuator/health répond `{"status":"UP"}` |
+| Base (PostgreSQL) | non exposée | `docker compose ps` affiche `db` en `healthy` |
+
+Nginx relaie les appels `/api` du front vers l'API : aucun réglage CORS n'est nécessaire.
 
 | Action | Commande |
 |---|---|
-| Voir les logs de l'API | `docker compose logs -f app` |
+| Voir les logs d'un service | `docker compose logs -f app` (ou `frontend`, `db`) |
 | Arrêter (données conservées) | `docker compose down` |
 | Tout réinitialiser (supprime la base) | `docker compose down -v` |
 
-### 4. Lancer le front-end (développement)
+### 4. Développer le front-end avec rechargement automatique
 
-Dans un second terminal :
+Pour modifier le front, utiliser le serveur Angular plutôt que le conteneur Nginx :
 
 ```bash
+docker compose up -d db app     # base + API seulement
 cd frontend
 npm install
 npm start
 ```
 
 Ouvrir http://localhost:4200. Les appels vers `/api` sont redirigés vers l'API par `proxy.conf.json`.
+Arrêter le conteneur `frontend` au préalable s'il tourne (`docker compose stop frontend`), car il utilise le même port.
 
 ### Développer le back-end hors Docker
 
@@ -143,7 +152,8 @@ La fusion est bloquée si la CI ou la Quality Gate échoue.
 |---|---|---|
 | `password authentication failed for user "uniflow"` | La base a été créée avec un ancien mot de passe (le volume le conserve) | `docker compose down -v` puis `docker compose up --build -d` |
 | `DB_PASSWORD manquant dans le fichier .env` | Fichier `.env` absent ou incomplet | `cp .env.example .env` puis compléter |
-| `port is already allocated` sur 8080 | Un autre programme utilise le port | Changer `APP_PORT` dans `.env` |
+| `port is already allocated` sur 8080 ou 4200 | Un autre programme utilise le port | Changer `APP_PORT` ou `FRONTEND_PORT` dans `.env` |
+| `502 Bad Gateway` sur `/api` | L'API n'est pas encore démarrée ou a planté | `docker compose logs app` |
 | `curl: (52) Empty reply from server` | L'API redémarre en boucle | Lire `docker compose logs app` |
 | `./mvnw: Permission denied` | Droit d'exécution perdu sous Windows | `chmod +x backend/mvnw` |
 
