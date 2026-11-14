@@ -1,0 +1,37 @@
+name: uniflow
+
+services:
+  # --- Base de données PostgreSQL ---
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-uniflow}
+      POSTGRES_USER: ${POSTGRES_USER:-uniflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans le fichier .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # --- API Spring Boot ---
+  app:
+    build: ./backend
+    image: ${APP_IMAGE:-uniflow:latest}
+    environment:
+      DB_URL: ${DB_URL:?DB_URL manquant dans le fichier .env}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME manquant dans le fichier .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans le fichier .env}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    ports:
+      - "${APP_PORT:-8080}:${SERVER_PORT:-8080}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db-data:
