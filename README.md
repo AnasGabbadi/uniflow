@@ -1,5 +1,8 @@
 # UniFlow
 
+[![CI](https://github.com/AnasGabbadi/uniflow/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/AnasGabbadi/uniflow/actions/workflows/ci.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=AnasGabbadi_uniflow&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=AnasGabbadi_uniflow)
+
 Application de gestion des étudiants, des formations et des inscriptions, réalisée dans le cadre du projet final DevOps.
 L'objectif est de livrer une application fonctionnelle **et** une chaîne DevOps reproductible : Git, CI/CD, Docker, Kubernetes.
 
@@ -10,8 +13,8 @@ L'objectif est de livrer une application fonctionnelle **et** une chaîne DevOps
 | Langage | Java 21 |
 | Framework | Spring Boot (Web, Data JPA, Validation, Actuator) |
 | Base de données | PostgreSQL + Flyway |
-| Tests | JUnit 5, tests d'API |
-| Front-end | Interface simple (dossier `frontend/`) |
+| Tests | JUnit 5, JaCoCo, tests d'API |
+| Front-end | Angular + SCSS (dossier `frontend/`) |
 | Conteneurisation | Docker multi-stage + Docker Compose |
 | Orchestration | Kubernetes local avec Minikube |
 | CI/CD et qualité | GitHub Actions, SonarQube Cloud, Trivy |
@@ -21,9 +24,13 @@ L'objectif est de livrer une application fonctionnelle **et** une chaîne DevOps
 
 ```
 uniflow/
-├── src/                  # Code Spring Boot (créé par IP-9)
-├── pom.xml               # Build Maven (créé par IP-9)
-├── frontend/             # Application front-end (créée par IP-16)
+├── backend/              # API Spring Boot
+│   ├── src/
+│   ├── pom.xml
+│   ├── Dockerfile        # Image multi-stage de l'API (IP-11)
+│   └── .dockerignore
+├── frontend/             # Application Angular (IP-16)
+│   └── Dockerfile        # Image Nginx du front (IP-17)
 ├── kubernetes/           # Manifestes Kubernetes (sprint 3)
 ├── docs/
 │   ├── backlog/          # Export du backlog Jira
@@ -31,27 +38,129 @@ uniflow/
 │   ├── uml/              # Diagrammes UML (IP-20)
 │   ├── evidence/         # Captures et preuves (tests, pipelines, déploiements)
 │   └── reports/          # Rapport technique final
-├── .github/              # Workflows CI/CD et modèle de Pull Request
-├── Dockerfile            # (IP-11)
-├── compose.yaml          # (IP-14)
+├── .github/              # Workflow CI et modèle de Pull Request
+├── compose.yaml          # Lance PostgreSQL, l'API et le front (IP-14, IP-17)
 ├── .env.example          # Modèle des variables d'environnement (IP-13)
+├── .gitignore
 └── README.md
 ```
 
-> Le code Spring Boot est à la racine, comme dans l'arborescence demandée par le cahier des charges (`Dockerfile`, `compose.yaml`, `pom.xml`, `src/`).
+> Le back-end et le front-end sont séparés pour que chaque binôme travaille dans son dossier. Les fichiers demandés par le cahier des charges (`Dockerfile`, `.dockerignore`, `pom.xml`, `src/`) se trouvent dans `backend/`, et `compose.yaml` à la racine orchestre l'ensemble.
+
+## Prérequis
+
+| Outil | Version | Vérification |
+|---|---|---|
+| Git | récent | `git --version` |
+| Docker Desktop | récent, **lancé** | `docker --version` |
+| JDK | 21 ou plus récent (le code cible Java 21) — seulement pour développer hors Docker | `java -version` |
+| Node.js | 20.19 ou plus récent — seulement pour développer le front | `node -v` |
+
+Maven n'a pas besoin d'être installé : le projet utilise le Maven Wrapper (`./mvnw`).
+Sous Windows, utilisez **Git Bash** pour lancer les commandes ci-dessous.
 
 ## Démarrage rapide
 
-_À compléter au fil du Sprint 0 (IP-8)._
+### 1. Récupérer le projet
 
 ```bash
-git clone https://github.com/<ORGANISATION>/uniflow.git
+git clone https://github.com/AnasGabbadi/uniflow.git
 cd uniflow
-cp .env.example .env      # puis renseigner les valeurs locales
-docker compose up --build
+git switch develop
 ```
 
+### 2. Configurer l'environnement
+
+```bash
+cp .env.example .env
+```
+
+Dans `.env`, remplacer les deux `change_me` par **le même** mot de passe (`POSTGRES_PASSWORD` et `DB_PASSWORD`).
+Le fichier `.env` est ignoré par Git : il ne doit jamais être commité.
+
+| Variable | Obligatoire | Rôle |
+|---|---|---|
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | oui | Création de la base PostgreSQL |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | oui | Connexion de l'API à la base (hôte `db` dans Docker) |
+| `SERVER_PORT` | non (`8080`) | Port de l'API dans le conteneur |
+| `APP_PORT` | non (`8080`) | Port de l'API sur votre PC |
+| `APP_IMAGE` | non (`uniflow:latest`) | Nom de l'image Docker de l'API |
+| `FRONTEND_PORT` | non (`4200`) | Port du front-end sur votre PC |
+
+### 3. Lancer toute l'application
+
+```bash
+docker compose up --build -d
+docker compose ps        # db : healthy, app : Up, frontend : Up
+```
+
+| Service | Adresse | Vérification |
+|---|---|---|
+| Front-end (Angular servi par Nginx) | http://localhost:4200 | La page UniFlow s'affiche |
+| API (Spring Boot) | http://localhost:8080 | http://localhost:8080/actuator/health répond `{"status":"UP"}` |
+| Base (PostgreSQL) | non exposée | `docker compose ps` affiche `db` en `healthy` |
+
+Nginx relaie les appels `/api` du front vers l'API : aucun réglage CORS n'est nécessaire.
+
+| Action | Commande |
+|---|---|
+| Voir les logs d'un service | `docker compose logs -f app` (ou `frontend`, `db`) |
+| Arrêter (données conservées) | `docker compose down` |
+| Tout réinitialiser (supprime la base) | `docker compose down -v` |
+
+### 4. Développer le front-end avec rechargement automatique
+
+Pour modifier le front, utiliser le serveur Angular plutôt que le conteneur Nginx :
+
+```bash
+docker compose up -d db app     # base + API seulement
+cd frontend
+npm install
+npm start
+```
+
+Ouvrir http://localhost:4200. Les appels vers `/api` sont redirigés vers l'API par `proxy.conf.json`.
+Arrêter le conteneur `frontend` au préalable s'il tourne (`docker compose stop frontend`), car il utilise le même port.
+
+### Développer le back-end hors Docker
+
+Pour déboguer l'API depuis l'IDE, démarrer seulement la base, puis l'application :
+
+```bash
+docker compose up -d db
+cd backend
+DB_URL=jdbc:postgresql://localhost:5432/uniflow DB_PASSWORD=<votre mot de passe> ./mvnw spring-boot:run
+```
+
+> La base n'est pas exposée par défaut. Pour y accéder depuis votre PC, ajouter temporairement `ports: ["5432:5432"]` au service `db` (sans le commiter).
+
+## Tests et qualité
+
+| Action | Commande |
+|---|---|
+| Tests back-end + rapport de couverture JaCoCo | `cd backend && ./mvnw verify` (base démarrée) |
+| Lint front-end | `cd frontend && npm run lint` |
+| Format front-end | `cd frontend && npm run format:check` |
+| Build front-end | `cd frontend && npm run build` |
+
+À chaque Pull Request, la CI GitHub Actions compile, teste et analyse le code avec SonarQube Cloud.
+La fusion est bloquée si la CI ou la Quality Gate échoue.
+
+## Problèmes fréquents
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| `password authentication failed for user "uniflow"` | La base a été créée avec un ancien mot de passe (le volume le conserve) | `docker compose down -v` puis `docker compose up --build -d` |
+| `DB_PASSWORD manquant dans le fichier .env` | Fichier `.env` absent ou incomplet | `cp .env.example .env` puis compléter |
+| `port is already allocated` sur 8080 ou 4200 | Un autre programme utilise le port | Changer `APP_PORT` ou `FRONTEND_PORT` dans `.env` |
+| `502 Bad Gateway` sur `/api` | L'API n'est pas encore démarrée ou a planté | `docker compose logs app` |
+| `curl: (52) Empty reply from server` | L'API redémarre en boucle | Lire `docker compose logs app` |
+| `./mvnw: Permission denied` | Droit d'exécution perdu sous Windows | `chmod +x backend/mvnw` |
+
 ## Règles de travail
+
+- Workflow Git complet (cycle d'une fonctionnalité, revues, releases, hotfix) : [docs/git-workflow.md](docs/git-workflow.md)
+- Quand un ticket est-il terminé ? [docs/definition-of-done.md](docs/definition-of-done.md)
 
 ### Branches
 - `main` : versions stables et livrées (protégée).
@@ -74,13 +183,3 @@ Exemple : `IP-23 feat: ajouter la création d'un étudiant`
 ### Sécurité
 - Ne **jamais** versionner de mot de passe, de token ou de fichier `.env`.
 - Les secrets CI sont stockés dans **Settings → Secrets and variables → Actions**.
-
-## Équipe
-
-| Profil | Membre |
-|---|---|
-| Scrum Master | _à compléter_ |
-| Back-end 1 | _à compléter_ |
-| Back-end 2 | _à compléter_ |
-| Front-end 1 | _à compléter_ |
-| Front-end 2 | _à compléter_ |

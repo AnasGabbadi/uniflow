@@ -1,0 +1,43 @@
+# Réduit le contexte de build Docker et empêche les secrets d'entrer dans l'image.
+# Les motifs "**/" fonctionnent que le contexte soit la racine du dépôt ou backend/.
+
+# --- Secrets et configuration locale (jamais dans l'image) ---
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+**/secrets/
+
+# --- Sortie de build (recréée dans l'étape Maven du Dockerfile) ---
+**/target/
+**/*.log
+
+# --- Git et CI ---
+.git
+.gitignore
+.gitattributes
+.github/
+
+# --- IDE et OS ---
+**/.idea/
+**/.vscode/
+**/*.iml
+**/.classpath
+**/.project
+**/.settings/
+**/.DS_Store
+**/Thumbs.db
+
+# --- Fichiers inutiles pour construire l'application ---
+docs/
+**/*.md
+Dockerfile
+**/Dockerfile
+compose*.yaml
+compose*.yml
+docker-compose*.yml
+kubernetes/
+k8s/
