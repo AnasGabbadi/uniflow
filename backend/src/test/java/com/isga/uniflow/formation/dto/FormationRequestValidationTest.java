@@ -35,7 +35,7 @@ class FormationRequestValidationTest {
 
     private FormationRequest valide() {
         return new FormationRequest("Java avancé", "Spring Boot", 40, 20,
-                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20));
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), "OUVERTE");
     }
 
     @Test
@@ -44,16 +44,42 @@ class FormationRequestValidationTest {
     }
 
     @Test
+    void statutAbsentEstAccepte() {
+        FormationRequest r = new FormationRequest("Java", null, 40, 20,
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), null);
+        assertTrue(validator.validate(r).isEmpty());
+    }
+
+    @Test
+    void lesTroisStatutsAutorisesSontAcceptes() {
+        for (String statut : new String[]{"OUVERTE", "FERMEE", "ARCHIVEE"}) {
+            FormationRequest r = new FormationRequest("Java", null, 40, 20,
+                    LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), statut);
+            assertTrue(validator.validate(r).isEmpty(), "statut " + statut);
+        }
+    }
+
+    @Test
+    void statutInconnuEstRefuse() {
+        FormationRequest r = new FormationRequest("Java", null, 40, 20,
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), "TERMINEE");
+        Set<ConstraintViolation<FormationRequest>> erreurs = validator.validate(r);
+        assertEquals(1, erreurs.size());
+        assertEquals("Le statut doit être OUVERTE, FERMEE ou ARCHIVEE",
+                erreurs.iterator().next().getMessage());
+    }
+
+    @Test
     void dateFinIdentiqueADateDebutEstAcceptee() {
         FormationRequest r = new FormationRequest("Atelier", null, 8, 10,
-                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 1));
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 1), null);
         assertTrue(validator.validate(r).isEmpty());
     }
 
     @Test
     void dateFinAvantDateDebutEstRefusee() {
         FormationRequest r = new FormationRequest("Java", null, 40, 20,
-                LocalDate.of(2026, 12, 20), LocalDate.of(2026, 12, 1));
+                LocalDate.of(2026, 12, 20), LocalDate.of(2026, 12, 1), null);
         Set<ConstraintViolation<FormationRequest>> erreurs = validator.validate(r);
         assertEquals(1, erreurs.size());
         assertEquals("La date de fin ne peut pas précéder la date de début",
@@ -63,7 +89,14 @@ class FormationRequestValidationTest {
     @Test
     void intituleVideEstRefuse() {
         FormationRequest r = new FormationRequest("  ", null, 40, 20,
-                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20));
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), null);
+        assertEquals(1, validator.validate(r).size());
+    }
+
+    @Test
+    void intituleDeCentCinquanteEtUnCaracteresEstRefuse() {
+        FormationRequest r = new FormationRequest("a".repeat(151), null, 40, 20,
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), null);
         assertEquals(1, validator.validate(r).size());
     }
 
@@ -71,7 +104,7 @@ class FormationRequestValidationTest {
     void capaciteNulleOuNegativeEstRefusee() {
         for (int capacite : new int[]{0, -5}) {
             FormationRequest r = new FormationRequest("Java", null, 40, capacite,
-                    LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20));
+                    LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), null);
             assertEquals(1, validator.validate(r).size(), "capacité " + capacite);
         }
     }
@@ -80,14 +113,14 @@ class FormationRequestValidationTest {
     void dureeNulleOuNegativeEstRefusee() {
         for (int duree : new int[]{0, -1}) {
             FormationRequest r = new FormationRequest("Java", null, duree, 20,
-                    LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20));
+                    LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), null);
             assertEquals(1, validator.validate(r).size(), "durée " + duree);
         }
     }
 
     @Test
     void champsObligatoiresAbsentsSontSignales() {
-        FormationRequest r = new FormationRequest(null, null, null, null, null, null);
+        FormationRequest r = new FormationRequest(null, null, null, null, null, null, null);
         // intitulé, durée, capacité, date de début, date de fin
         assertEquals(5, validator.validate(r).size());
     }

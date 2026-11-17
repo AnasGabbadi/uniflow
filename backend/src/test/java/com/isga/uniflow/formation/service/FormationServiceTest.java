@@ -1,10 +1,10 @@
 package com.isga.uniflow.formation.service;
 
-
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.entity.Formation;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
+import com.isga.uniflow.formation.exception.FormationIntrouvableException;
 import com.isga.uniflow.formation.repository.FormationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,11 +12,17 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -34,40 +40,134 @@ class FormationServiceTest {
     @InjectMocks
     private FormationService service;
 
-    private final FormationRequest request = new FormationRequest(
-            "  Java avancé ", "Spring Boot", 40, 20,
-            LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20));
+    private FormationRequest requete(String statut) {
+        return new FormationRequest("  Java avancé ", "Spring Boot", 40, 20,
+                LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20), statut);
+    }
+
+    // ---------- Création ----------
 
     @Test
-    void creerEnregistreLaFormationOuverteAvecLesDonneesFournies() {
+    void creerEnregistreLaFormationAvecLesDonneesFournies() {
         when(repository.existsByIntituleIgnoreCase("Java avancé")).thenReturn(false);
         when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Formation response = service.creer(request);
-
+        FormationResponse response = service.creer(requete("FERMEE"));
 
         ArgumentCaptor<Formation> captor = ArgumentCaptor.forClass(Formation.class);
         verify(repository).save(captor.capture());
         Formation saved = captor.getValue();
 
-        assertEquals("Java avancé", saved.getIntitule());
+        assertEquals("Java avancé", saved.getIntitule());          // intitulé nettoyé (trim)
         assertEquals("Spring Boot", saved.getDescription());
         assertEquals(40, saved.getDuree());
         assertEquals(20, saved.getCapaciteMax());
         assertEquals(LocalDate.of(2026, 12, 1), saved.getDateDebut());
         assertEquals(LocalDate.of(2026, 12, 20), saved.getDateFin());
-        assertEquals("OUVERTE", saved.getStatut());
+        assertEquals("FERMEE", saved.getStatut());                 // statut fourni respecté
 
-        // La réponse reflète ce qui a été enregistré
-        assertEquals("Java avancé", response.getIntitule());
-        assertEquals("OUVERTE", response.getStatut());
+        // La réponse reflète ce qui a été enregistré ; aucune inscription : toutes les places sont libres
+        assertEquals("Java avancé", response.intitule());
+        assertEquals("FERMEE", response.statut());
+        assertEquals(20, response.placesRestantes());
+    }
+
+    @Test
+    void creerUtiliseLeStatutOuverteParDefaut() {
+        when(repository.existsByIntituleIgnoreCase("Java avancé")).thenReturn(false);
+        when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        FormationResponse response = service.creer(requete(null));
+
+        assertEquals("OUVERTE", response.statut());
     }
 
     @Test
     void creerRefuseUnIntituleDejaUtilise() {
         when(repository.existsByIntituleIgnoreCase("Java avancé")).thenReturn(true);
 
-        assertThrows(FormationDejaExistanteException.class, () -> service.creer(request));
+        assertThrows(FormationDejaExistanteException.class, () -> service.creer(requete(null)));
         verify(repository, never()).save(any());
+    }
+
+    // ---------- Consultation par identifiant ----------
+
+    @Test
+    void trouverParIdCalculeLesPlacesRestantes() {
+        Formation formation = uneFormation(1, "Java avancé", 20);
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.compterInscriptionsActives(1)).thenReturn(7L);
+
+        FormationResponse response = service.trouverParId(1);
+
+        assertEquals(1, response.id());
+        assertEquals("Java avancé", response.intitule());
+        assertEquals("Spring Boot", response.description());
+        assertEquals(LocalDate.of(2026, 12, 1), response.dateDebut());
+        assertEquals(LocalDate.of(2026, 12, 20), response.dateFin());
+        assertEquals(13, response.placesRestantes());              // 20 - 7
+    }
+
+    @Test
+    void trouverParIdNeDepassePasZeroPlaceRestante() {
+        Formation formation = uneFormation(1, "Java avancé", 5);
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.compterInscriptionsActives(1)).thenReturn(8L);   // données incohérentes
+
+        assertEquals(0, service.trouverParId(1).placesRestantes());
+    }
+
+    @Test
+    void trouverParIdLeveUneExceptionSiLIdentifiantEstInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        FormationIntrouvableException ex =
+                assertThrows(FormationIntrouvableException.class, () -> service.trouverParId(99));
+
+        assertEquals("Aucune formation avec l'identifiant 99", ex.getMessage());
+    }
+
+    // ---------- Consultation de la liste ----------
+
+    @Test
+    void trouverToutesCalculeLesPlacesRestantesDeChaqueFormation() {
+        Formation f1 = uneFormation(1, "Java avancé", 20);
+        Formation f2 = uneFormation(2, "Docker et Kubernetes", 25);
+        when(repository.findAll(Sort.by("id"))).thenReturn(List.of(f1, f2));
+        // Seule la formation 1 a des inscriptions actives (4)
+        when(repository.compterInscriptionsActivesParFormation())
+                .thenReturn(Collections.singletonList(new Object[]{1, 4L}));
+
+        List<FormationResponse> resultat = service.trouverToutes();
+
+        assertEquals(2, resultat.size());
+        assertEquals("Java avancé", resultat.get(0).intitule());
+        assertEquals(16, resultat.get(0).placesRestantes());       // 20 - 4
+        assertEquals("Docker et Kubernetes", resultat.get(1).intitule());
+        assertEquals(25, resultat.get(1).placesRestantes());       // aucune inscription : 25 libres
+    }
+
+    @Test
+    void trouverToutesRenvoieUneListeVideQuandIlNYADeFormation() {
+        when(repository.findAll(Sort.by("id"))).thenReturn(List.of());
+        when(repository.compterInscriptionsActivesParFormation()).thenReturn(Collections.emptyList());
+
+        assertTrue(service.trouverToutes().isEmpty());
+    }
+
+    // ---------- Utilitaire ----------
+
+    /** Formation réelle avec un id fixé (l'entité n'a pas de setId : on passe par réflexion). */
+    private Formation uneFormation(int id, String intitule, int capaciteMax) {
+        Formation f = new Formation();
+        ReflectionTestUtils.setField(f, "id", id);
+        f.setIntitule(intitule);
+        f.setDescription("Spring Boot");
+        f.setDuree(40);
+        f.setCapaciteMax(capaciteMax);
+        f.setDateDebut(LocalDate.of(2026, 12, 1));
+        f.setDateFin(LocalDate.of(2026, 12, 20));
+        f.setStatut(Formation.STATUT_OUVERTE);
+        return f;
     }
 }
