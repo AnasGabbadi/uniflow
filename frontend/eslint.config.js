@@ -5,6 +5,10 @@ const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 module.exports = defineConfig([
+  // ✅ Ignore GLOBAL (objet contenant uniquement `ignores`)
+  {
+    ignores: ['dist/**', '.angular/**', 'coverage/**', 'node_modules/**'],
+  },
   {
     files: ['**/*.ts'],
     extends: [
@@ -17,25 +21,22 @@ module.exports = defineConfig([
     rules: {
       '@angular-eslint/directive-selector': [
         'error',
-        {
-          type: 'attribute',
-          prefix: 'app',
-          style: 'camelCase',
-        },
+        { type: 'attribute', prefix: 'app', style: 'camelCase' },
       ],
       '@angular-eslint/component-selector': [
         'error',
-        {
-          type: 'element',
-          prefix: 'app',
-          style: 'kebab-case',
-        },
+        { type: 'element', prefix: 'app', style: 'kebab-case' },
       ],
     },
   },
-  {
-    files: ['**/*.html'],
-    extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
-    rules: {},
+    {
+  files: ['**/*.html'],
+  extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
+  rules: {
+    '@angular-eslint/template/label-has-associated-control': [
+      'error',
+      { checkIds: false }, // ⬅️ au lieu de assertIdRefs: false
+    ],
   },
+}
 ]);
