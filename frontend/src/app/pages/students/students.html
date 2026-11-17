@@ -1,5 +1,19 @@
 <h1>Students Management</h1>
 
+<app-ui-form-field
+  label="Student name"
+  controlId="studentName"
+  [required]="true">
+
+  <input
+    id="studentName"
+    type="text"
+    required
+    aria-labelledby="studentName-label"
+    placeholder="Enter student name" />
+
+</app-ui-form-field>
+
 <app-ui-table
   [columns]="columns"
   [rows]="students">

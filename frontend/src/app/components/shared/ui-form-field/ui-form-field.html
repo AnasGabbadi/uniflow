@@ -1,11 +1,14 @@
 
 <div class="form-field">
-  <label [for]="controlId">
+  <span
+    class="form-field-label"
+    [id]="controlId + '-label'">
     {{ label }}
+
     @if (required) {
-      <span aria-hidden="true">*</span>
+      <span class="required" aria-hidden="true">*</span>
     }
-  </label>
+  </span>
 
   <ng-content></ng-content>
 </div>
