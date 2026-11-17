@@ -18,7 +18,9 @@ import java.util.Map;
  * Gestion des erreurs propre au module formation.
  *
  * Limité à FormationController : il n'affecte aucun autre contrôleur de l'équipe.
- * @Order garantit que ce handler passe avant un éventuel GlobalExceptionHandler.
+ * Quand un GlobalExceptionHandler commun existera, ce fichier pourra être réduit
+ * (ou supprimé) en déplaçant ces handlers dans le global.
+ * @Order garantit que ce handler passe avant un éventuel handler global.
  */
 @RestControllerAdvice(assignableTypes = FormationController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
