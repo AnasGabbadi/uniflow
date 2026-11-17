@@ -1,0 +1,29 @@
+
+button {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s;
+}
+
+button[data-variant="primary"] {
+  background: #172d50;
+  color: white;
+}
+
+button[data-variant="secondary"] {
+  background: #e2e8f0;
+  color: #172d50;
+}
+
+button[data-variant="danger"] {
+  background: #dc2626;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
