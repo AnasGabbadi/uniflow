@@ -1,10 +1,12 @@
+
 import { Component } from '@angular/core';
 import { UiTable } from '../../components/shared/ui-table/ui-table';
+import { UiFormField } from '../../components/shared/ui-form-field/ui-form-field';
 
 @Component({
   selector: 'app-students',
   standalone: true,
-  imports: [UiTable],
+  imports: [UiTable, UiFormField],
   templateUrl: './students.html'
 })
 export class Students {
