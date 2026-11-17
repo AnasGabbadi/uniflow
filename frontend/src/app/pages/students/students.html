@@ -1,0 +1,9 @@
+<h1>Students Management</h1>
+
+<!-- Student Form Field -->
+<app-ui-form-field label="Student name" controlId="studentName" [required]="true">
+  <input id="studentName" type="text" required placeholder="Enter student name" />
+</app-ui-form-field>
+
+<!-- Students Table -->
+<app-ui-table [columns]="columns" [rows]="students"> </app-ui-table>
