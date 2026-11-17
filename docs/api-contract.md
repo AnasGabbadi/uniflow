@@ -87,12 +87,13 @@ Mêmes champs, **sans `id`**.
 
 ```json
 {
-  "id": 3,
   "intitule": "DevOps avec Docker et Kubernetes",
+  "description": "Conteneurisation, CI/CD et orchestration avec Docker et Kubernetes",
   "duree": 40,
   "capaciteMax": 25,
-  "statut": "OUVERTE",
-  "placesRestantes": 7
+  "dateDebut": "2026-12-01",
+  "dateFin": "2026-12-20",
+  "statut": "OUVERTE"
 }
 ```
 

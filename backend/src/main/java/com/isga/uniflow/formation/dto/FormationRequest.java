@@ -4,13 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
 /**
- * Corps de la requête de création d'une formation.
+ * Corps de la requête de création (POST) d'une formation, réutilisable pour la modification (PUT).
+ * Les règles de validation sont déclarées ici, sur le DTO, pas sur l'entité.
+ *
+ * Le champ placesRestantes n'apparaît pas ici : il est calculé par l'API, jamais envoyé par le front.
  */
 public record FormationRequest(
 
@@ -18,9 +22,11 @@ public record FormationRequest(
         @Size(max = 150, message = "L'intitulé ne doit pas dépasser 150 caractères")
         String intitule,
 
+        /** Facultative. */
         @Size(max = 5000, message = "La description ne doit pas dépasser 5000 caractères")
         String description,
 
+        /** Durée en heures. */
         @NotNull(message = "La durée est obligatoire")
         @Positive(message = "La durée doit être strictement positive")
         Integer duree,
@@ -33,7 +39,12 @@ public record FormationRequest(
         LocalDate dateDebut,
 
         @NotNull(message = "La date de fin est obligatoire")
-        LocalDate dateFin
+        LocalDate dateFin,
+
+        /** Facultatif : OUVERTE (par défaut), FERMEE ou ARCHIVEE. */
+        @Pattern(regexp = "OUVERTE|FERMEE|ARCHIVEE",
+                 message = "Le statut doit être OUVERTE, FERMEE ou ARCHIVEE")
+        String statut
 ) {
 
     /**

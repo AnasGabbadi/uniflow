@@ -1,6 +1,6 @@
 package com.isga.uniflow.formation.controller;
 
-import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationExceptionHandler;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -20,7 +19,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -64,18 +62,7 @@ class FormationControllerTest {
 
     @Test
     void creer_DoitRetourner201AvecFormationCreee() throws Exception {
-        Formation formation = mock(Formation.class);
-
-        when(formation.getId()).thenReturn(42);
-        when(formation.getIntitule()).thenReturn("Java Spring Boot");
-        when(formation.getDescription()).thenReturn("Formation backend Java");
-        when(formation.getDuree()).thenReturn(30);
-        when(formation.getCapaciteMax()).thenReturn(20);
-        when(formation.getDateDebut()).thenReturn(LocalDate.of(2026, 12, 1));
-        when(formation.getDateFin()).thenReturn(LocalDate.of(2027, 1, 1));
-        when(formation.getStatut()).thenReturn(Formation.STATUT_OUVERTE);
-
-        when(formationService.creer(any())).thenReturn(formation);
+        when(formationService.creer(any())).thenReturn(uneReponse(42, "Java Spring Boot", 30, 20));
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -87,9 +74,31 @@ class FormationControllerTest {
                 .andExpect(jsonPath("$.description").value("Formation backend Java"))
                 .andExpect(jsonPath("$.duree").value(30))
                 .andExpect(jsonPath("$.capaciteMax").value(20))
-                .andExpect(jsonPath("$.statut").value("OUVERTE"));
+                .andExpect(jsonPath("$.statut").value("OUVERTE"))
+                .andExpect(jsonPath("$.placesRestantes").value(20));
 
         verify(formationService).creer(any());
+    }
+
+    @Test
+    void creer_AccepteUnStatutFourniEtLeTransmetAuService() throws Exception {
+        when(formationService.creer(any())).thenReturn(uneReponse(1, "Java Spring Boot", 30, 20));
+        String corps = corpsValide().replace("\"capaciteMax\": 20,", "\"capaciteMax\": 20, \"statut\": \"FERMEE\",");
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(corps))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void creer_DoitRetourner400SiStatutInconnu() throws Exception {
+        String corps = corpsValide().replace("\"capaciteMax\": 20,", "\"capaciteMax\": 20, \"statut\": \"TERMINEE\",");
+
+        mockMvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(corps))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs.statut")
+                        .value("Le statut doit être OUVERTE, FERMEE ou ARCHIVEE"));
+
+        verifyNoInteractions(formationService);
     }
 
     @Test
@@ -180,9 +189,8 @@ class FormationControllerTest {
     // ============================================================
 
     @Test
-    void trouverParId_DoitRetourner200AvecLesDetailsDeLaFormation() throws Exception {
-        when(formationService.trouverParId(42))
-                .thenReturn(uneFormation(42, "Java Spring Boot"));
+    void trouverParId_DoitRetourner200AvecLesDetailsEtLesPlacesRestantes() throws Exception {
+        when(formationService.trouverParId(42)).thenReturn(uneReponse(42, "Java Spring Boot", 30, 7));
 
         mockMvc.perform(get(URL + "/42"))
                 .andExpect(status().isOk())
@@ -193,7 +201,8 @@ class FormationControllerTest {
                 .andExpect(jsonPath("$.capaciteMax").value(20))
                 .andExpect(jsonPath("$.dateDebut").value("2026-12-01"))
                 .andExpect(jsonPath("$.dateFin").value("2027-01-01"))
-                .andExpect(jsonPath("$.statut").value("OUVERTE"));
+                .andExpect(jsonPath("$.statut").value("OUVERTE"))
+                .andExpect(jsonPath("$.placesRestantes").value(7));
     }
 
     @Test
@@ -223,16 +232,18 @@ class FormationControllerTest {
     @Test
     void trouverToutes_DoitRetourner200AvecToutesLesFormations() throws Exception {
         when(formationService.trouverToutes()).thenReturn(List.of(
-                uneFormation(1, "Java Spring Boot"),
-                uneFormation(2, "Docker et Kubernetes")));
+                uneReponse(1, "Java Spring Boot", 30, 16),
+                uneReponse(2, "Docker et Kubernetes", 40, 25)));
 
         mockMvc.perform(get(URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].intitule").value("Java Spring Boot"))
+                .andExpect(jsonPath("$[0].placesRestantes").value(16))
                 .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].intitule").value("Docker et Kubernetes"));
+                .andExpect(jsonPath("$[1].intitule").value("Docker et Kubernetes"))
+                .andExpect(jsonPath("$[1].placesRestantes").value(25));
     }
 
     @Test
@@ -248,7 +259,7 @@ class FormationControllerTest {
     // Utilitaires
     // ============================================================
 
-    /** Corps JSON valide pour la création d'une formation. */
+    /** Corps JSON valide pour la création d'une formation (sans statut : valeur par défaut). */
     private String corpsValide() {
         return """
                 {
@@ -262,17 +273,9 @@ class FormationControllerTest {
                 """;
     }
 
-    /** Formation réelle avec un identifiant fixé (l'entité n'a pas de setId : on passe par réflexion). */
-    private Formation uneFormation(int id, String intitule) {
-        Formation f = new Formation();
-        ReflectionTestUtils.setField(f, "id", id);
-        f.setIntitule(intitule);
-        f.setDescription("Formation backend Java");
-        f.setDuree(30);
-        f.setCapaciteMax(20);
-        f.setDateDebut(LocalDate.of(2026, 12, 1));
-        f.setDateFin(LocalDate.of(2027, 1, 1));
-        f.setStatut(Formation.STATUT_OUVERTE);
-        return f;
+    /** Réponse de formation toute prête, telle que la renverrait le service. */
+    private FormationResponse uneReponse(int id, String intitule, int duree, int placesRestantes) {
+        return new FormationResponse(id, intitule, "Formation backend Java", duree, 20,
+                LocalDate.of(2026, 12, 1), LocalDate.of(2027, 1, 1), "OUVERTE", placesRestantes);
     }
 }

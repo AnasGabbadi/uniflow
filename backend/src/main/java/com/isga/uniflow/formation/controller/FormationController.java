@@ -2,7 +2,6 @@ package com.isga.uniflow.formation.controller;
 
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
-import com.isga.uniflow.formation.entity.Formation;
 import com.isga.uniflow.formation.service.FormationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -35,14 +34,14 @@ public class FormationController {
      */
     @PostMapping
     public ResponseEntity<FormationResponse> creer(@Valid @RequestBody FormationRequest request) {
-        Formation formation = formationService.creer(request);
+        FormationResponse response = formationService.creer(request);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(formation.getId())
+                .buildAndExpand(response.id())
                 .toUri();
 
-        return ResponseEntity.created(location).body(FormationResponse.from(formation));
+        return ResponseEntity.created(location).body(response);
     }
 
     /**
@@ -51,7 +50,7 @@ public class FormationController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<FormationResponse> trouverParId(@PathVariable Integer id) {
-        return ResponseEntity.ok(FormationResponse.from(formationService.trouverParId(id)));
+        return ResponseEntity.ok(formationService.trouverParId(id));
     }
 
     /**
@@ -59,9 +58,6 @@ public class FormationController {
      */
     @GetMapping
     public ResponseEntity<List<FormationResponse>> trouverToutes() {
-        List<FormationResponse> formations = formationService.trouverToutes().stream()
-                .map(FormationResponse::from)
-                .toList();
-        return ResponseEntity.ok(formations);
+        return ResponseEntity.ok(formationService.trouverToutes());
     }
 }
