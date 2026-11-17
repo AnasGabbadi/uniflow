@@ -47,6 +47,18 @@ uniflow/
 
 > Le back-end et le front-end sont séparés pour que chaque binôme travaille dans son dossier. Les fichiers demandés par le cahier des charges (`Dockerfile`, `.dockerignore`, `pom.xml`, `src/`) se trouvent dans `backend/`, et `compose.yaml` à la racine orchestre l'ensemble.
 
+
+## Architecture Principles
+
+- **Feature-based organization:** Each business feature has its own isolated package.
+- **Separation of concerns:** Every layer has a clearly defined responsibility.
+- **Code reusability:** Shared components are placed in `common/`.
+- **Maintainability:** Features can evolve independently.
+- **Team collaboration:** Developers can work on different features with minimal conflicts.
+- **Testability:** Each feature has a corresponding test package.
+
+
+
 ## Prérequis
 
 | Outil | Version | Vérification |

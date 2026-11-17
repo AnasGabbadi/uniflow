@@ -1,6 +1,8 @@
-package com.isga.uniflow.model;
+package com.isga.uniflow.etudiant.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.isga.uniflow.inscription.entity.Inscription;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
