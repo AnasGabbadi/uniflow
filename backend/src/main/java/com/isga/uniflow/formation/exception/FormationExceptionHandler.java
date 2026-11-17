@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -18,9 +19,7 @@ import java.util.Map;
  * Gestion des erreurs propre au module formation.
  *
  * Limité à FormationController : il n'affecte aucun autre contrôleur de l'équipe.
- * Quand un GlobalExceptionHandler commun existera, ce fichier pourra être réduit
- * (ou supprimé) en déplaçant ces handlers dans le global.
- * @Order garantit que ce handler passe avant un éventuel handler global.
+ * @Order garantit que ce handler passe avant un éventuel GlobalExceptionHandler.
  */
 @RestControllerAdvice(assignableTypes = FormationController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -46,10 +45,23 @@ public class FormationExceptionHandler {
                 "Corps de requête illisible : vérifiez le JSON et le format des dates (yyyy-MM-dd)", null);
     }
 
+    /** Identifiant dans l'URL qui n'est pas un nombre (ex. /api/formations/abc) : 400. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return build(HttpStatus.BAD_REQUEST,
+                "Identifiant invalide : '" + ex.getValue() + "'", null);
+    }
+
     /** Intitulé déjà utilisé : 409. */
     @ExceptionHandler(FormationDejaExistanteException.class)
     public ResponseEntity<Map<String, Object>> handleDejaExistante(FormationDejaExistanteException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
+    /** Aucune formation pour l'identifiant demandé : 404. */
+    @ExceptionHandler(FormationIntrouvableException.class)
+    public ResponseEntity<Map<String, Object>> handleIntrouvable(FormationIntrouvableException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), null);
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message,

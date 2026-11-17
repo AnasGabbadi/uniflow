@@ -1,4 +1,3 @@
-
 package com.isga.uniflow.formation.dto;
 
 import com.isga.uniflow.formation.entity.Formation;
@@ -13,7 +12,7 @@ import static org.mockito.Mockito.when;
 class FormationResponseTest {
 
     @Test
-    void from_ShouldMapAllFormationFieldsToResponse() {
+    void from_ShouldMapAllFormationFieldsAndPlacesRestantesToResponse() {
 
         // Arrange
         Formation formation = mock(Formation.class);
@@ -38,11 +37,12 @@ class FormationResponseTest {
                 25,
                 dateDebut,
                 dateFin,
-                "OUVERTE"
+                "OUVERTE",
+                7
         );
 
-        // Act
-        FormationResponse actual = FormationResponse.from(formation);
+        // Act : les places restantes sont calculées par le service puis passées à from()
+        FormationResponse actual = FormationResponse.from(formation, 7);
 
         // Assert
         assertEquals(expected, actual);

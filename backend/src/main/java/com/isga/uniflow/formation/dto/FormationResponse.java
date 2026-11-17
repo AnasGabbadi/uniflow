@@ -6,6 +6,9 @@ import java.time.LocalDate;
 
 /**
  * Représentation d'une formation renvoyée par l'API.
+ *
+ * {@code placesRestantes} est calculé par l'API (capacité max moins les inscriptions
+ * EN_ATTENTE et VALIDEE). Il n'est jamais envoyé par le front et n'est pas stocké en base.
  */
 public record FormationResponse(
         Integer id,
@@ -15,10 +18,12 @@ public record FormationResponse(
         Integer capaciteMax,
         LocalDate dateDebut,
         LocalDate dateFin,
-        String statut
+        String statut,
+        Integer placesRestantes
 ) {
 
-    public static FormationResponse from(Formation f) {
+    /** Construit la réponse à partir de l'entité et du nombre de places restantes déjà calculé. */
+    public static FormationResponse from(Formation f, int placesRestantes) {
         return new FormationResponse(
                 f.getId(),
                 f.getIntitule(),
@@ -27,6 +32,7 @@ public record FormationResponse(
                 f.getCapaciteMax(),
                 f.getDateDebut(),
                 f.getDateFin(),
-                f.getStatut());
+                f.getStatut(),
+                placesRestantes);
     }
 }
