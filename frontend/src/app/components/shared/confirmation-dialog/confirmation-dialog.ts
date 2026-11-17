@@ -13,15 +13,11 @@ import {
   styleUrl: './confirmation-dialog.scss'
 })
 export class ConfirmationDialog {
-
   @Input() open = false;
-
-@Input() title = 'Confirmation';
-
-@Input() message = 'Are you sure?';
+  @Input() required = false;
+  @Input() title = '';
+  @Input() message = '';
 
   @Output() confirmed = new EventEmitter<void>();
-
   @Output() cancelled = new EventEmitter<void>();
-
 }
