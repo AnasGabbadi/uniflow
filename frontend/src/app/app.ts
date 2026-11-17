@@ -1,4 +1,3 @@
-
 import { Component } from '@angular/core';
 import { Layout } from './components/layout/layout';
 
@@ -7,7 +6,6 @@ import { Layout } from './components/layout/layout';
   standalone: true,
   imports: [Layout],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
-export class App {
-}
+export class App {}

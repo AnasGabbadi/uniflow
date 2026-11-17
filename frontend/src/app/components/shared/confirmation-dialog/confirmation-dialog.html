@@ -1,12 +1,6 @@
-
 @if (open) {
   <div class="overlay">
-    <div
-      class="dialog"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="dialog-title">
-
+    <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title">
       <h2 id="dialog-title">
         {{ title }}
       </h2>
@@ -14,21 +8,10 @@
       <p>{{ message }}</p>
 
       <div class="actions">
-        <button
-          type="button"
-          class="cancel"
-          (click)="cancelled.emit()">
-          Cancel
-        </button>
+        <button type="button" class="cancel" (click)="cancelled.emit()">Cancel</button>
 
-        <button
-          type="button"
-          class="confirm"
-          (click)="confirmed.emit()">
-          Confirm
-        </button>
+        <button type="button" class="confirm" (click)="confirmed.emit()">Confirm</button>
       </div>
-
     </div>
   </div>
 }

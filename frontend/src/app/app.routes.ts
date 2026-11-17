@@ -1,4 +1,3 @@
-
 import { Routes } from '@angular/router';
 
 import { Students } from './pages/students/students';
@@ -6,31 +5,29 @@ import { Trainings } from './pages/trainings/trainings';
 import { Enrollments } from './pages/enrollments/enrollments';
 
 export const routes: Routes = [
-
   {
     path: '',
     redirectTo: 'students',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
 
   {
     path: 'students',
-    component: Students
+    component: Students,
   },
 
   {
     path: 'trainings',
-    component: Trainings
+    component: Trainings,
   },
 
   {
     path: 'enrollments',
-    component: Enrollments
+    component: Enrollments,
   },
 
   {
     path: '**',
-    redirectTo: 'students'
-  }
-
+    redirectTo: 'students',
+  },
 ];
