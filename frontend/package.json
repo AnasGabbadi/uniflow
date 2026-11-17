@@ -1,16 +1,18 @@
 {
   "name": "uniflow-frontend",
   "version": "0.0.0",
-  "scripts": {
-    "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "lint": "ng lint",
-    "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,html,scss}\""
-  },
+
+"scripts": {
+  "ng": "ng",
+  "start": "ng serve",
+  "build": "ng build",
+  "watch": "ng build --watch --configuration development",
+  "test": "ng test",
+  "lint": "ng lint",
+  "format": "prettier --write \"src/**/*.{ts,html,scss}\"",
+  "format:check": "prettier --check \"src/**/*.{ts,html,scss}\""
+},
+
   "private": true,
   "packageManager": "npm@11.19.1",
   "dependencies": {
