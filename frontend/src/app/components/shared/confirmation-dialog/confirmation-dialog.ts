@@ -14,11 +14,11 @@ import {
 })
 export class ConfirmationDialog {
 
-  @Input() open: boolean = false;
+  @Input() open = false;
 
-  @Input() title: string = 'Confirmation';
+@Input() title = 'Confirmation';
 
-  @Input() message: string = 'Are you sure?';
+@Input() message = 'Are you sure?';
 
   @Output() confirmed = new EventEmitter<void>();
 

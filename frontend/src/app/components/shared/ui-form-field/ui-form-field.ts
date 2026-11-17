@@ -1,4 +1,3 @@
-
 import { Component, Input } from '@angular/core';
 
 @Component({
@@ -10,4 +9,5 @@ import { Component, Input } from '@angular/core';
 export class UiFormField {
   @Input() label = '';
   @Input() required = false;
+  @Input() controlId = '';
 }
