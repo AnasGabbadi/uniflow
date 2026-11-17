@@ -1,16 +1,9 @@
-
-import {
-  Component,
-  EventEmitter,
-  Input,
-  Output
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-confirmation-dialog',
-  standalone: true,
   templateUrl: './confirmation-dialog.html',
-  styleUrl: './confirmation-dialog.scss'
+  styleUrl: './confirmation-dialog.scss',
 })
 export class ConfirmationDialog {
   @Input() open = false;
