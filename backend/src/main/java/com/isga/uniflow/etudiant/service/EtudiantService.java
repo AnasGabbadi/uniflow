@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Locale;
 
+
 @Service
 public class EtudiantService {
 
@@ -25,6 +26,7 @@ public class EtudiantService {
         this.etudiantRepository = etudiantRepository;
     }
 
+    
     @Transactional
     public EtudiantResponse creer(EtudiantRequest request) {
         String email = normaliserEmail(request.email());
@@ -44,7 +46,7 @@ public class EtudiantService {
         return EtudiantResponse.from(chercher(id));
     }
 
-
+    
     @Transactional(readOnly = true)
     public List<EtudiantResponse> lister(String recherche) {
         List<Etudiant> etudiants;
@@ -58,6 +60,20 @@ public class EtudiantService {
         }
 
         return etudiants.stream().map(EtudiantResponse::from).toList();
+    }
+
+    
+    @Transactional
+    public EtudiantResponse modifier(Integer id, EtudiantRequest request) {
+        Etudiant etudiant = chercher(id);
+        String email = normaliserEmail(request.email());
+
+        if (etudiantRepository.existsByEmailIgnoreCaseAndIdNot(email, id)) {
+            throw emailDejaUtilise(email);
+        }
+
+        appliquer(etudiant, request, email);
+        return EtudiantResponse.from(etudiantRepository.save(etudiant));
     }
 
 

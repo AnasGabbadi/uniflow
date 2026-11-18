@@ -21,11 +21,13 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -194,6 +196,57 @@ class EtudiantControllerTest {
                 .andExpect(jsonPath("$.code").value("REQUETE_INVALIDE"));
 
         verifyNoInteractions(etudiantService);
+    }
+
+    // ============================================================
+    // PUT /api/etudiants/{id}
+    // ============================================================
+
+    @Test
+    void modifier_DoitRetourner200AvecLEtudiantModifie() throws Exception {
+        when(etudiantService.modifier(eq(42), any())).thenReturn(uneReponse(42));
+
+        mockMvc.perform(put(URL + "/42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpsValide()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.nom").value("El Amrani"))
+                .andExpect(jsonPath("$.email").value("sara.elamrani@example.ma"));
+
+        verify(etudiantService).modifier(eq(42), any());
+    }
+
+    @Test
+    void modifier_DoitRetourner400SiDonneesInvalides() throws Exception {
+        String corps = corpsValide().replace("sara.elamrani@example.ma", "pas-un-email");
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corps))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION"))
+                .andExpect(jsonPath("$.erreurs[0].champ").value("email"));
+
+        verifyNoInteractions(etudiantService);
+    }
+
+    @Test
+    void modifier_DoitRetourner404SiIdentifiantInconnu() throws Exception {
+        when(etudiantService.modifier(eq(99), any()))
+                .thenThrow(new RessourceIntrouvableException("étudiant", 99));
+
+        mockMvc.perform(put(URL + "/99").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"));
+    }
+
+    @Test
+    void modifier_DoitRetourner409SiEmailUtiliseParUnAutreEtudiant() throws Exception {
+        when(etudiantService.modifier(eq(42), any())).thenThrow(
+                new ConflitMetierException(CodeErreur.EMAIL_DEJA_UTILISE, "Cet email est déjà utilisé."));
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EMAIL_DEJA_UTILISE"));
     }
 
     // ---------- Données de test ----------
