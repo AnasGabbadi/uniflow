@@ -1,0 +1,50 @@
+<section class="page">
+  <a routerLink="/trainings">← Back to trainings</a>
+
+  @if (erreur(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  @if (chargement()) {
+    <p class="state">Loading training…</p>
+  } @else if (formation(); as f) {
+    <header class="page-header">
+      <h1>{{ f.intitule }}</h1>
+      <span class="badge" [attr.data-status]="f.statut">{{ libellesStatut[f.statut] }}</span>
+    </header>
+
+    <dl class="details">
+      <dt>Description</dt>
+      <dd>{{ f.description || '—' }}</dd>
+
+      <dt>Duration</dt>
+      <dd>{{ f.duree }} hours</dd>
+
+      <dt>Dates</dt>
+      <dd>
+        {{ f.dateDebut ? (f.dateDebut | date: 'dd/MM/yyyy') : '—' }}
+        →
+        {{ f.dateFin ? (f.dateFin | date: 'dd/MM/yyyy') : '—' }}
+      </dd>
+
+      <dt>Capacity</dt>
+      <dd>{{ f.capaciteMax }} seats</dd>
+
+      <dt>Seats left</dt>
+      <dd>{{ f.placesRestantes }}</dd>
+    </dl>
+
+    <div class="actions">
+      <a class="primary" [routerLink]="['/trainings', f.id, 'edit']">Edit</a>
+      <button type="button" class="danger" (click)="confirmationOuverte.set(true)">Delete</button>
+    </div>
+
+    <app-confirmation-dialog
+      [open]="confirmationOuverte()"
+      title="Delete training"
+      [message]="messageSuppression()"
+      (confirmed)="supprimer()"
+      (cancelled)="confirmationOuverte.set(false)"
+    ></app-confirmation-dialog>
+  }
+</section>
