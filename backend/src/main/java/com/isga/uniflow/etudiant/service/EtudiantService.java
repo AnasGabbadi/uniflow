@@ -2,18 +2,22 @@ package com.isga.uniflow.etudiant.service;
 
 import com.isga.uniflow.erreur.CodeErreur;
 import com.isga.uniflow.erreur.ConflitMetierException;
+import com.isga.uniflow.erreur.RessourceIntrouvableException;
 import com.isga.uniflow.etudiant.dto.EtudiantRequest;
 import com.isga.uniflow.etudiant.dto.EtudiantResponse;
 import com.isga.uniflow.etudiant.entity.Etudiant;
 import com.isga.uniflow.etudiant.repository.EtudiantRepository;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
-
 
 @Service
 public class EtudiantService {
+
+    private static final Sort TRI_NOM_PRENOM = Sort.by("nom", "prenom");
 
     private final EtudiantRepository etudiantRepository;
 
@@ -21,8 +25,6 @@ public class EtudiantService {
         this.etudiantRepository = etudiantRepository;
     }
 
-    
-    
     @Transactional
     public EtudiantResponse creer(EtudiantRequest request) {
         String email = normaliserEmail(request.email());
@@ -36,6 +38,33 @@ public class EtudiantService {
         return EtudiantResponse.from(etudiantRepository.save(etudiant));
     }
 
+    
+    @Transactional(readOnly = true)
+    public EtudiantResponse trouverParId(Integer id) {
+        return EtudiantResponse.from(chercher(id));
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<EtudiantResponse> lister(String recherche) {
+        List<Etudiant> etudiants;
+
+        if (recherche == null || recherche.isBlank()) {
+            etudiants = etudiantRepository.findAll(TRI_NOM_PRENOM);
+        } else {
+            String terme = recherche.trim();
+            etudiants = etudiantRepository
+                    .findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(terme, terme, TRI_NOM_PRENOM);
+        }
+
+        return etudiants.stream().map(EtudiantResponse::from).toList();
+    }
+
+
+    private Etudiant chercher(Integer id) {
+        return etudiantRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("étudiant", id));
+    }
 
     private void appliquer(Etudiant etudiant, EtudiantRequest request, String email) {
         etudiant.setNom(request.nom().trim());
