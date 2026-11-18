@@ -1,9 +1,127 @@
-<h1>Students Management</h1>
 
-<!-- Student Form Field -->
-<app-ui-form-field label="Student name" controlId="studentName" [required]="true">
-  <input id="studentName" type="text" required placeholder="Enter student name" />
-</app-ui-form-field>
+<h1>Étudiants</h1>
 
-<!-- Students Table -->
-<app-ui-table [columns]="columns" [rows]="students"> </app-ui-table>
+@if (success()) {
+  <p role="status" class="success">{{ success() }}</p>
+}
+
+@if (error()) {
+  <p role="alert" class="error">{{ error() }}</p>
+}
+
+<button type="button" (click)="afficherFormulaire()">
+  Ajouter un étudiant
+</button>
+
+@if (formulaireVisible()) {
+  <section>
+    <h2>Nouvel étudiant</h2>
+
+    <form #studentForm="ngForm" (ngSubmit)="creer()">
+
+      <div>
+        <label for="nom">Nom *</label>
+        <input
+          id="nom"
+          name="nom"
+          type="text"
+          [(ngModel)]="nouveauEtudiant.nom"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="prenom">Prénom *</label>
+        <input
+          id="prenom"
+          name="prenom"
+          type="text"
+          [(ngModel)]="nouveauEtudiant.prenom"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="email">Email *</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          [(ngModel)]="nouveauEtudiant.email"
+          required
+        />
+      </div>
+
+      <div>
+        <label for="telephone">Téléphone</label>
+        <input
+          id="telephone"
+          name="telephone"
+          type="tel"
+          [(ngModel)]="nouveauEtudiant.telephone"
+        />
+      </div>
+
+      <div>
+        <label for="adresse">Adresse</label>
+        <input
+          id="adresse"
+          name="adresse"
+          type="text"
+          [(ngModel)]="nouveauEtudiant.adresse"
+        />
+      </div>
+
+      <div>
+        <label for="dateNaissance">Date de naissance</label>
+        <input
+          id="dateNaissance"
+          name="dateNaissance"
+          type="date"
+          [(ngModel)]="nouveauEtudiant.dateNaissance"
+        />
+      </div>
+
+      <button type="submit" [disabled]="studentForm.invalid || saving()">
+        {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
+      </button>
+
+      <button type="button" (click)="annuler()">
+        Annuler
+      </button>
+
+    </form>
+  </section>
+}
+
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (students().length === 0) {
+  <p>Aucun étudiant enregistré pour le moment.</p>
+} @else {
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Nom</th>
+        <th scope="col">Prénom</th>
+        <th scope="col">Email</th>
+        <th scope="col">Téléphone</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      @for (s of students(); track s.id) {
+        <tr>
+          <td>{{ s.nom }}</td>
+          <td>{{ s.prenom }}</td>
+          <td>{{ s.email }}</td>
+          <td>{{ s.telephone ?? '—' }}</td>
+          <td>
+            <a [routerLink]="['/students', s.id]">Voir détails</a>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
