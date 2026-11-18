@@ -3,6 +3,7 @@ package com.isga.uniflow.etudiant.controller;
 import com.isga.uniflow.erreur.CodeErreur;
 import com.isga.uniflow.erreur.ConflitMetierException;
 import com.isga.uniflow.erreur.GestionnaireErreurs;
+import com.isga.uniflow.erreur.RessourceIntrouvableException;
 import com.isga.uniflow.etudiant.dto.EtudiantResponse;
 import com.isga.uniflow.etudiant.service.EtudiantService;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,21 +17,20 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Teste EtudiantController (POST, IP-23) et GestionnaireErreurs avec MockMvc en mode "standalone" :
- * ni contexte Spring complet, ni base de données. Le service est simulé avec Mockito.
- */
+
 @ExtendWith(MockitoExtension.class)
 class EtudiantControllerTest {
 
@@ -121,6 +121,79 @@ class EtudiantControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.code").value("EMAIL_DEJA_UTILISE"));
+    }
+
+    // ============================================================
+    // GET /api/etudiants
+    // ============================================================
+
+    @Test
+    void lister_DoitRetourner200AvecLaListeDesEtudiants() throws Exception {
+        when(etudiantService.lister(null)).thenReturn(List.of(uneReponse(1), uneReponse(2)));
+
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].nom").value("El Amrani"))
+                .andExpect(jsonPath("$[1].id").value(2));
+    }
+
+    @Test
+    void lister_DoitTransmettreLeParametreDeRechercheAuService() throws Exception {
+        when(etudiantService.lister("ali")).thenReturn(List.of(uneReponse(3)));
+
+        mockMvc.perform(get(URL).param("recherche", "ali"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(3));
+
+        verify(etudiantService).lister("ali");
+    }
+
+    @Test
+    void lister_DoitRetourner200EtUneListeVideSiAucunEtudiant() throws Exception {
+        when(etudiantService.lister(null)).thenReturn(List.of());
+
+        mockMvc.perform(get(URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    // ============================================================
+    // GET /api/etudiants/{id}
+    // ============================================================
+
+    @Test
+    void trouverParId_DoitRetourner200AvecLeDetailDeLEtudiant() throws Exception {
+        when(etudiantService.trouverParId(42)).thenReturn(uneReponse(42));
+
+        mockMvc.perform(get(URL + "/42"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.nom").value("El Amrani"))
+                .andExpect(jsonPath("$.email").value("sara.elamrani@example.ma"))
+                .andExpect(jsonPath("$.dateNaissance").value("2003-04-21"));
+    }
+
+    @Test
+    void trouverParId_DoitRetourner404SiIdentifiantInconnu() throws Exception {
+        when(etudiantService.trouverParId(99)).thenThrow(new RessourceIntrouvableException("étudiant", 99));
+
+        mockMvc.perform(get(URL + "/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"))
+                .andExpect(jsonPath("$.detail").value("Aucun étudiant avec l'identifiant 99."));
+    }
+
+    @Test
+    void trouverParId_DoitRetourner400SiIdentifiantNonNumerique() throws Exception {
+        mockMvc.perform(get(URL + "/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REQUETE_INVALIDE"));
+
+        verifyNoInteractions(etudiantService);
     }
 
     // ---------- Données de test ----------
