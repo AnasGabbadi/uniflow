@@ -20,6 +20,12 @@ public interface FormationRepository extends JpaRepository<Formation, Integer> {
     /** Vrai si une formation porte déjà cet intitulé (comparaison insensible à la casse). */
     boolean existsByIntituleIgnoreCase(String intitule);
 
+    /**
+     * Vrai si une AUTRE formation (identifiant différent) porte déjà cet intitulé.
+     * Sert à la modification : une formation peut garder son propre intitulé.
+     */
+    boolean existsByIntituleIgnoreCaseAndIdNot(String intitule, Integer id);
+
     /** Nombre d'inscriptions actives pour une formation. */
     @Query(value = """
             SELECT COUNT(*) FROM inscription
