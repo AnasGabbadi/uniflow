@@ -3,6 +3,7 @@ package com.isga.uniflow.formation.service;
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
 import com.isga.uniflow.formation.repository.FormationRepository;
@@ -153,6 +154,89 @@ class FormationServiceTest {
         when(repository.compterInscriptionsActivesParFormation()).thenReturn(Collections.emptyList());
 
         assertTrue(service.trouverToutes().isEmpty());
+    }
+
+    // ---------- Modification ----------
+
+    @Test
+    void modifierMetAJourLesChampsEtCalculeLesPlacesRestantes() {
+        Formation formation = uneFormation(1, "Ancien titre", 20);
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
+        when(repository.compterInscriptionsActives(1)).thenReturn(6L);
+        when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        FormationResponse response = service.modifier(1, requete("FERMEE"));
+
+        assertEquals(1, response.id());
+        assertEquals("Java avancé", response.intitule());          // intitulé nettoyé (trim)
+        assertEquals("Spring Boot", response.description());
+        assertEquals(40, response.duree());
+        assertEquals(20, response.capaciteMax());
+        assertEquals(LocalDate.of(2026, 12, 1), response.dateDebut());
+        assertEquals(LocalDate.of(2026, 12, 20), response.dateFin());
+        assertEquals("FERMEE", response.statut());
+        assertEquals(14, response.placesRestantes());              // 20 - 6
+    }
+
+    @Test
+    void modifierConserveLeStatutActuelSiAucunStatutN_EstFourni() {
+        Formation formation = uneFormation(1, "Ancien titre", 20);
+        formation.setStatut("ARCHIVEE");
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
+        when(repository.compterInscriptionsActives(1)).thenReturn(0L);
+        when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        FormationResponse response = service.modifier(1, requete(null));
+
+        assertEquals("ARCHIVEE", response.statut());
+    }
+
+    @Test
+    void modifierAccepteUneCapaciteEgaleAuxInscriptionsActives() {
+        Formation formation = uneFormation(1, "Java avancé", 30);
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
+        when(repository.compterInscriptionsActives(1)).thenReturn(20L);   // capacité demandée : 20
+        when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        FormationResponse response = service.modifier(1, requete(null));
+
+        assertEquals(20, response.capaciteMax());
+        assertEquals(0, response.placesRestantes());
+    }
+
+    @Test
+    void modifierRefuseUneCapaciteInferieureAuxInscriptionsActives() {
+        Formation formation = uneFormation(1, "Java avancé", 30);
+        when(repository.findById(1)).thenReturn(Optional.of(formation));
+        when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
+        when(repository.compterInscriptionsActives(1)).thenReturn(21L);   // capacité demandée : 20
+
+        FormationCapaciteInsuffisanteException ex = assertThrows(
+                FormationCapaciteInsuffisanteException.class, () -> service.modifier(1, requete(null)));
+
+        assertEquals("La capacité (20) ne peut pas être inférieure au nombre d'inscriptions actives (21)",
+                ex.getMessage());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modifierRefuseUnIntituleDejaUtiliseParUneAutreFormation() {
+        when(repository.findById(1)).thenReturn(Optional.of(uneFormation(1, "Ancien titre", 20)));
+        when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(true);
+
+        assertThrows(FormationDejaExistanteException.class, () -> service.modifier(1, requete(null)));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modifierLeveUneExceptionSiLIdentifiantEstInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        assertThrows(FormationIntrouvableException.class, () -> service.modifier(99, requete(null)));
+        verify(repository, never()).save(any());
     }
 
     // ---------- Utilitaire ----------

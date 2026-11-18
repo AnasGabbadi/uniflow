@@ -1,6 +1,7 @@
 package com.isga.uniflow.formation.controller;
 
 import com.isga.uniflow.formation.dto.FormationResponse;
+import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationExceptionHandler;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
@@ -19,11 +20,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -182,6 +185,103 @@ class FormationControllerTest {
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value(
                         "Une formation avec l'intitulé 'Java Spring Boot' existe déjà"));
+    }
+
+    // ============================================================
+    // PUT /api/formations/{id}
+    // ============================================================
+
+    @Test
+    void modifier_DoitRetourner200AvecLaFormationMiseAJour() throws Exception {
+        when(formationService.modifier(eq(42), any())).thenReturn(uneReponse(42, "Java Spring Boot", 30, 12));
+
+        mockMvc.perform(put(URL + "/42")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpsValide()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(42))
+                .andExpect(jsonPath("$.intitule").value("Java Spring Boot"))
+                .andExpect(jsonPath("$.placesRestantes").value(12));
+
+        verify(formationService).modifier(eq(42), any());
+    }
+
+    @Test
+    void modifier_DoitRetourner404SiIdentifiantInconnu() throws Exception {
+        when(formationService.modifier(eq(99), any())).thenThrow(new FormationIntrouvableException(99));
+
+        mockMvc.perform(put(URL + "/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpsValide()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Aucune formation avec l'identifiant 99"));
+    }
+
+    @Test
+    void modifier_DoitRetourner400SiDonneesInvalides() throws Exception {
+        String corps = corpsValide().replace("\"duree\": 30", "\"duree\": 0");
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corps))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs.duree").value("La durée doit être strictement positive"));
+
+        verifyNoInteractions(formationService);
+    }
+
+    @Test
+    void modifier_DoitRetourner400SiDateDeFinPrecedeLaDateDeDebut() throws Exception {
+        String corps = corpsValide()
+                .replace("2026-12-01", "2027-02-01")
+                .replace("2027-01-01", "2026-12-01");
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corps))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs.periodeValide")
+                        .value("La date de fin ne peut pas précéder la date de début"));
+
+        verifyNoInteractions(formationService);
+    }
+
+    @Test
+    void modifier_DoitRetourner400SiChampsObligatoiresAbsents() throws Exception {
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs.intitule").exists())
+                .andExpect(jsonPath("$.erreurs.capaciteMax").exists());
+
+        verifyNoInteractions(formationService);
+    }
+
+    @Test
+    void modifier_DoitRetourner400SiIdentifiantNEstPasUnNombre() throws Exception {
+        mockMvc.perform(put(URL + "/abc").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Identifiant invalide : 'abc'"));
+
+        verifyNoInteractions(formationService);
+    }
+
+    @Test
+    void modifier_DoitRetourner409SiIntituleDejaUtilise() throws Exception {
+        when(formationService.modifier(eq(42), any()))
+                .thenThrow(new FormationDejaExistanteException("Java Spring Boot"));
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(
+                        "Une formation avec l'intitulé 'Java Spring Boot' existe déjà"));
+    }
+
+    @Test
+    void modifier_DoitRetourner409SiCapaciteInferieureAuxInscriptionsActives() throws Exception {
+        when(formationService.modifier(eq(42), any()))
+                .thenThrow(new FormationCapaciteInsuffisanteException(10, 15));
+
+        mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value(
+                        "La capacité (10) ne peut pas être inférieure au nombre d'inscriptions actives (15)"));
     }
 
     // ============================================================
