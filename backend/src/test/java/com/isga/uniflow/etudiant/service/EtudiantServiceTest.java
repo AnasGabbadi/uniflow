@@ -1,0 +1,97 @@
+package com.isga.uniflow.etudiant.service;
+
+import com.isga.uniflow.erreur.CodeErreur;
+import com.isga.uniflow.erreur.ConflitMetierException;
+import com.isga.uniflow.etudiant.dto.EtudiantRequest;
+import com.isga.uniflow.etudiant.dto.EtudiantResponse;
+import com.isga.uniflow.etudiant.entity.Etudiant;
+import com.isga.uniflow.etudiant.repository.EtudiantRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDate;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Teste EtudiantService (création, IP-23) avec un repository simulé (Mockito) : pas de base de données.
+ */
+@ExtendWith(MockitoExtension.class)
+class EtudiantServiceTest {
+
+    @Mock
+    private EtudiantRepository repository;
+
+    @InjectMocks
+    private EtudiantService service;
+
+    private EtudiantRequest requete() {
+        return new EtudiantRequest("  El Amrani ", " Sara ", "  Sara.ElAmrani@Example.MA ",
+                "+212 6 12 34 56 78", "12 rue des Écoles, Casablanca", LocalDate.of(2003, 4, 21));
+    }
+
+    // ---------- Création ----------
+
+    @Test
+    void creerEnregistreLEtudiantAvecLesDonneesNettoyees() {
+        when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(false);
+        when(repository.save(any(Etudiant.class))).thenAnswer(inv -> {
+            Etudiant e = inv.getArgument(0);
+            ReflectionTestUtils.setField(e, "id", 7);   // simule l'identifiant généré par la base
+            return e;
+        });
+
+        EtudiantResponse response = service.creer(requete());
+
+        ArgumentCaptor<Etudiant> captor = ArgumentCaptor.forClass(Etudiant.class);
+        verify(repository).save(captor.capture());
+        Etudiant saved = captor.getValue();
+
+        assertEquals("El Amrani", saved.getNom());                       // nom nettoyé (trim)
+        assertEquals("Sara", saved.getPrenom());                         // prénom nettoyé (trim)
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());      // minuscules + trim
+        assertEquals("+212 6 12 34 56 78", saved.getTelephone());
+        assertEquals("12 rue des Écoles, Casablanca", saved.getAdresse());
+        assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
+
+        assertEquals(7, response.id());
+        assertEquals("sara.elamrani@example.ma", response.email());
+        assertEquals("El Amrani", response.nom());
+    }
+
+    @Test
+    void creerAccepteLesChampsFacultatifsAbsents() {
+        EtudiantRequest minimale = new EtudiantRequest("El Amrani", "Sara", "sara@example.ma", null, null, null);
+        when(repository.existsByEmailIgnoreCase("sara@example.ma")).thenReturn(false);
+        when(repository.save(any(Etudiant.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EtudiantResponse response = service.creer(minimale);
+
+        assertEquals("sara@example.ma", response.email());
+        assertNull(response.telephone());
+        assertNull(response.adresse());
+        assertNull(response.dateNaissance());
+    }
+
+    @Test
+    void creerRefuseUnEmailDejaUtilise() {
+        when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(true);
+
+        ConflitMetierException exception = assertThrows(ConflitMetierException.class,
+                () -> service.creer(requete()));
+
+        assertEquals(CodeErreur.EMAIL_DEJA_UTILISE, exception.getCode());
+        verify(repository, never()).save(any());
+    }
+}
