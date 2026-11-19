@@ -1,0 +1,62 @@
+<section class="page">
+  <h1>{{ modeEdition ? 'Modifier un étudiant' : 'Ajouter un étudiant' }}</h1>
+
+  @if (erreurServeur(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  @if (chargement()) {
+    <p>Chargement de l'étudiant...</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
+      <app-ui-form-field label="Nom" controlId="nom" [required]="true">
+        <input id="nom" type="text" formControlName="nom" maxlength="100" />
+      </app-ui-form-field>
+      @if (messageErreur('nom'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Prénom" controlId="prenom" [required]="true">
+        <input id="prenom" type="text" formControlName="prenom" maxlength="100" />
+      </app-ui-form-field>
+      @if (messageErreur('prenom'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Email" controlId="email" [required]="true">
+        <input id="email" type="email" formControlName="email" maxlength="255" />
+      </app-ui-form-field>
+      @if (messageErreur('email'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Téléphone" controlId="telephone">
+        <input id="telephone" type="tel" formControlName="telephone" maxlength="30" />
+      </app-ui-form-field>
+      @if (messageErreur('telephone'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Adresse" controlId="adresse">
+        <input id="adresse" type="text" formControlName="adresse" maxlength="255" />
+      </app-ui-form-field>
+      @if (messageErreur('adresse'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Date de naissance" controlId="dateNaissance">
+        <input id="dateNaissance" type="date" formControlName="dateNaissance" />
+      </app-ui-form-field>
+      @if (messageErreur('dateNaissance'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <div class="form-actions">
+        <a routerLink="/students">Annuler</a>
+        <button type="submit" class="primary" [disabled]="enCours()">
+          {{ enCours() ? 'Enregistrement...' : 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

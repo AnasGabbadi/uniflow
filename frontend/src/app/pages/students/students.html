@@ -1,98 +1,47 @@
-<h1>Étudiants</h1>
+<section class="page">
+  <h1>Gestion des étudiants</h1>
 
-@if (success()) {
-  <p role="status" class="success">{{ success() }}</p>
-}
+  @if (success()) {
+    <p role="status" class="success">{{ success() }}</p>
+  }
 
-@if (error()) {
-  <p role="alert" class="error">{{ error() }}</p>
-}
+  @if (error()) {
+    <p role="alert" class="error">{{ error() }}</p>
+  }
 
-<button type="button" (click)="afficherFormulaire()">Ajouter un étudiant</button>
+  <button type="button" (click)="ajouter()">Ajouter un étudiant</button>
 
-@if (formulaireVisible()) {
-  <section>
-    <h2>Nouvel étudiant</h2>
-
-    <form #studentForm="ngForm" (ngSubmit)="creer()">
-      <div>
-        <label for="nom">Nom *</label>
-        <input id="nom" name="nom" type="text" [(ngModel)]="nouveauEtudiant.nom" required />
-      </div>
-
-      <div>
-        <label for="prenom">Prénom *</label>
-        <input
-          id="prenom"
-          name="prenom"
-          type="text"
-          [(ngModel)]="nouveauEtudiant.prenom"
-          required
-        />
-      </div>
-
-      <div>
-        <label for="email">Email *</label>
-        <input id="email" name="email" type="email" [(ngModel)]="nouveauEtudiant.email" required />
-      </div>
-
-      <div>
-        <label for="telephone">Téléphone</label>
-        <input id="telephone" name="telephone" type="tel" [(ngModel)]="nouveauEtudiant.telephone" />
-      </div>
-
-      <div>
-        <label for="adresse">Adresse</label>
-        <input id="adresse" name="adresse" type="text" [(ngModel)]="nouveauEtudiant.adresse" />
-      </div>
-
-      <div>
-        <label for="dateNaissance">Date de naissance</label>
-        <input
-          id="dateNaissance"
-          name="dateNaissance"
-          type="date"
-          [(ngModel)]="nouveauEtudiant.dateNaissance"
-        />
-      </div>
-
-      <button type="submit" [disabled]="studentForm.invalid || saving()">
-        {{ saving() ? 'Enregistrement...' : 'Enregistrer' }}
-      </button>
-
-      <button type="button" (click)="annuler()">Annuler</button>
-    </form>
-  </section>
-}
-
-@if (loading()) {
-  <p>Chargement…</p>
-} @else if (students().length === 0) {
-  <p>Aucun étudiant enregistré pour le moment.</p>
-} @else {
-  <table>
-    <thead>
-      <tr>
-        <th scope="col">Nom</th>
-        <th scope="col">Prénom</th>
-        <th scope="col">Email</th>
-        <th scope="col">Téléphone</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      @for (s of students(); track s.id) {
+  @if (loading()) {
+    <p>Chargement des étudiants...</p>
+  } @else if (students().length === 0) {
+    <p>Aucun étudiant enregistré pour le moment.</p>
+  } @else {
+    <table>
+      <thead>
         <tr>
-          <td>{{ s.nom }}</td>
-          <td>{{ s.prenom }}</td>
-          <td>{{ s.email }}</td>
-          <td>{{ s.telephone ?? '—' }}</td>
-          <td>
-            <a [routerLink]="['/students', s.id]">Voir détails</a>
-          </td>
+          <th scope="col">Nom</th>
+          <th scope="col">Prénom</th>
+          <th scope="col">Email</th>
+          <th scope="col">Téléphone</th>
+          <th scope="col">Actions</th>
         </tr>
-      }
-    </tbody>
-  </table>
-}
+      </thead>
+
+      <tbody>
+        @for (s of students(); track s.id) {
+          <tr>
+            <td>{{ s.nom }}</td>
+            <td>{{ s.prenom }}</td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.telephone ?? '—' }}</td>
+            <td>
+              <a [routerLink]="['/students', s.id]">Voir détails</a>
+              |
+              <button type="button" (click)="modifier(s.id)">Modifier</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
