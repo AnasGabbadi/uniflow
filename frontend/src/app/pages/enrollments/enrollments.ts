@@ -1,4 +1,3 @@
-
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -6,11 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ConfirmationDialog } from '../../components/shared/confirmation-dialog/confirmation-dialog';
 import { Etudiant } from '../../models/etudiant.model';
 import { Formation } from '../../models/formation.model';
-import {
-  Inscription,
-  InscriptionRequest,
-  StatutInscription,
-} from '../../models/inscription.model';
+import { Inscription, InscriptionRequest, StatutInscription } from '../../models/inscription.model';
 import { lireErreurApi } from '../../services/api-error.util';
 import { EtudiantService } from '../../services/etudiant.service';
 import { FormationService } from '../../services/formation.service';
@@ -102,10 +97,7 @@ export class Enrollments {
   }
 
   creer(): void {
-    if (
-      !this.nouvelleInscription.etudiantId ||
-      !this.nouvelleInscription.formationId
-    ) {
+    if (!this.nouvelleInscription.etudiantId || !this.nouvelleInscription.formationId) {
       this.erreur.set('Please select a student and a training.');
       return;
     }
@@ -127,17 +119,12 @@ export class Enrollments {
         const resultat = lireErreurApi(err);
 
         const messages: Record<string, string> = {
-          INSCRIPTION_EN_DOUBLE:
-            'This student is already enrolled in this training.',
-          FORMATION_COMPLETE:
-            'This training has reached its maximum capacity.',
-          FORMATION_NON_OUVERTE:
-            'This training is not open for enrollment.',
+          INSCRIPTION_EN_DOUBLE: 'This student is already enrolled in this training.',
+          FORMATION_COMPLETE: 'This training has reached its maximum capacity.',
+          FORMATION_NON_OUVERTE: 'This training is not open for enrollment.',
         };
 
-        this.erreur.set(
-          (resultat.code && messages[resultat.code]) || resultat.message,
-        );
+        this.erreur.set((resultat.code && messages[resultat.code]) || resultat.message);
         this.saving.set(false);
       },
     });
@@ -162,20 +149,16 @@ export class Enrollments {
     this.erreur.set(null);
     this.succes.set(null);
 
-    this.inscriptionService
-      .changerStatut(inscription.id, 'ANNULEE')
-      .subscribe({
-        next: (miseAJour) => {
-          this.inscriptions.update((liste) =>
-            liste.map((item) =>
-              item.id === miseAJour.id ? miseAJour : item,
-            ),
-          );
-          this.succes.set('Enrollment cancelled successfully!');
-        },
-        error: (err: unknown) => {
-          this.erreur.set(lireErreurApi(err).message);
-        },
-      });
+    this.inscriptionService.changerStatut(inscription.id, 'ANNULEE').subscribe({
+      next: (miseAJour) => {
+        this.inscriptions.update((liste) =>
+          liste.map((item) => (item.id === miseAJour.id ? miseAJour : item)),
+        );
+        this.succes.set('Enrollment cancelled successfully!');
+      },
+      error: (err: unknown) => {
+        this.erreur.set(lireErreurApi(err).message);
+      },
+    });
   }
 }
