@@ -44,7 +44,7 @@ export class StudentForm {
     ]),
     telephone: this.fb.nonNullable.control('', [
       Validators.maxLength(30),
-      Validators.pattern(/^[0-9 +\-]*$/),
+      Validators.pattern(/^[0-9 +-]*$/),
     ]),
     adresse: this.fb.nonNullable.control('', [
       Validators.maxLength(255),
