@@ -1,8 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
@@ -14,11 +11,7 @@ describe('Students', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Students],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        provideRouter([]),
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
@@ -60,9 +53,7 @@ describe('Students', () => {
   it('affiche un message si la liste est vide', async () => {
     const fixture = render();
 
-    http
-      .expectOne((req) => req.url.includes('/api/etudiants'))
-      .flush([]);
+    http.expectOne((req) => req.url.includes('/api/etudiants')).flush([]);
 
     await fixture.whenStable();
     fixture.detectChanges();
@@ -80,8 +71,6 @@ describe('Students', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(
-      fixture.nativeElement.querySelector('[role="alert"]'),
-    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeTruthy();
   });
 });

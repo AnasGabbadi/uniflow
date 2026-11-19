@@ -1,4 +1,3 @@
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -46,7 +45,8 @@ export class Students implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.etudiantService.lister()
+    this.etudiantService
+      .lister()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (liste) => this.students.set(liste),
@@ -81,11 +81,12 @@ export class Students implements OnInit {
       dateNaissance: this.nouveauEtudiant.dateNaissance || null,
     };
 
-    this.etudiantService.creer(donnees)
+    this.etudiantService
+      .creer(donnees)
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe({
         next: (etudiant) => {
-          this.students.update(liste => [...liste, etudiant]);
+          this.students.update((liste) => [...liste, etudiant]);
           this.formulaireVisible.set(false);
           this.nouveauEtudiant = this.formulaireVide();
           this.success.set('Étudiant ajouté avec succès !');
