@@ -1,0 +1,22 @@
+<a routerLink="/students">← Retour à la liste</a>
+
+@if (loading()) {
+  <p>Chargement…</p>
+} @else if (notFound()) {
+  <h1>Étudiant introuvable</h1>
+  <p>Cet étudiant n'existe pas ou a été supprimé.</p>
+} @else if (error()) {
+  <p role="alert">{{ error() }}</p>
+} @else if (student(); as s) {
+  <h1>{{ s.prenom }} {{ s.nom }}</h1>
+  <dl>
+    <dt>Email</dt>
+    <dd>{{ s.email }}</dd>
+    <dt>Téléphone</dt>
+    <dd>{{ s.telephone ?? '—' }}</dd>
+    <dt>Adresse</dt>
+    <dd>{{ s.adresse ?? '—' }}</dd>
+    <dt>Date de naissance</dt>
+    <dd>{{ s.dateNaissance ? (s.dateNaissance | date: 'dd/MM/yyyy') : '—' }}</dd>
+  </dl>
+}
