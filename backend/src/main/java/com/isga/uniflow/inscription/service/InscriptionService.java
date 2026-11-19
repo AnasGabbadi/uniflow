@@ -15,8 +15,11 @@ import com.isga.uniflow.inscription.repository.InscriptionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
- * Logique métier des inscriptions : inscrire un étudiant, et faire évoluer le statut d'une inscription.
+ * Logique métier des inscriptions : inscrire un étudiant, consulter les inscriptions,
+ * et faire évoluer le statut d'une inscription.
  */
 @Service
 public class InscriptionService {
@@ -70,6 +73,26 @@ public class InscriptionService {
         inscription.setStatut(StatutInscription.EN_ATTENTE.name());
 
         return InscriptionResponse.from(inscriptionRepository.save(inscription));
+    }
+
+    /** Renvoie toutes les inscriptions (triées par identifiant), liste vide s'il n'y en a aucune. */
+    @Transactional(readOnly = true)
+    public List<InscriptionResponse> lister() {
+        return inscriptionRepository.findAllAvecDetails().stream()
+                .map(InscriptionResponse::from)
+                .toList();
+    }
+
+    /**
+     * Renvoie une inscription par son identifiant.
+     *
+     * @throws RessourceIntrouvableException si l'inscription n'existe pas (HTTP 404)
+     */
+    @Transactional(readOnly = true)
+    public InscriptionResponse trouverParId(Integer id) {
+        Inscription inscription = inscriptionRepository.findByIdAvecDetails(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("inscription", id));
+        return InscriptionResponse.from(inscription);
     }
 
     /**
