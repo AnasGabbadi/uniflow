@@ -1,4 +1,5 @@
 package com.isga.uniflow.inscription.service;
+
 import com.isga.uniflow.erreur.CodeErreur;
 import com.isga.uniflow.erreur.ConflitMetierException;
 import com.isga.uniflow.erreur.RessourceIntrouvableException;
@@ -9,23 +10,16 @@ import com.isga.uniflow.formation.repository.FormationRepository;
 import com.isga.uniflow.inscription.dto.InscriptionRequest;
 import com.isga.uniflow.inscription.dto.InscriptionResponse;
 import com.isga.uniflow.inscription.entity.Inscription;
+import com.isga.uniflow.inscription.entity.StatutInscription;
 import com.isga.uniflow.inscription.repository.InscriptionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 /**
- * Logique métier des inscriptions : inscrire un étudiant à une formation.
+ * Logique métier des inscriptions : inscrire un étudiant, et faire évoluer le statut d'une inscription.
  */
 @Service
 public class InscriptionService {
-
-    /** Statut d'une inscription qui vient d'être créée. (Remplacé par l'enum StatutInscription en branche 2.) */
-    private static final String STATUT_INITIAL = "EN_ATTENTE";
-
-    /** Statuts qui occupent une place dans la formation. (Remplacé par l'enum en branche 2.) */
-    private static final List<String> STATUTS_ACTIFS = List.of("EN_ATTENTE", "VALIDEE");
 
     private final InscriptionRepository inscriptionRepository;
     private final EtudiantRepository etudiantRepository;
@@ -40,7 +34,7 @@ public class InscriptionService {
     }
 
     /**
-     * Inscrit un étudiant existant à une formation existante.
+     * Inscrit un étudiant existant à une formation existante (statut initial : EN_ATTENTE).
      * Ordre des vérifications : étudiant, formation, doublon, capacité.
      *
      * @throws RessourceIntrouvableException si l'étudiant ou la formation n'existe pas (HTTP 404)
@@ -61,8 +55,8 @@ public class InscriptionService {
         }
 
         // La capacité ne tient compte que des inscriptions actives (les annulées libèrent leur place)
-        long inscriptionsActives =
-                inscriptionRepository.countByFormation_IdAndStatutIn(formation.getId(), STATUTS_ACTIFS);
+        long inscriptionsActives = inscriptionRepository.countByFormation_IdAndStatutIn(
+                formation.getId(), StatutInscription.nomsDesStatutsActifs());
 
         if (inscriptionsActives >= formation.getCapaciteMax()) {
             throw new ConflitMetierException(CodeErreur.FORMATION_COMPLETE,
@@ -73,8 +67,33 @@ public class InscriptionService {
         Inscription inscription = new Inscription();
         inscription.setEtudiant(etudiant);
         inscription.setFormation(formation);
-        inscription.setStatut(STATUT_INITIAL);
+        inscription.setStatut(StatutInscription.EN_ATTENTE.name());
 
+        return InscriptionResponse.from(inscriptionRepository.save(inscription));
+    }
+
+    /**
+     * Fait passer une inscription au statut demandé, si la transition est autorisée
+     * (voir {@link StatutInscription}).
+     *
+     * @throws RessourceIntrouvableException si l'inscription n'existe pas (HTTP 404)
+     * @throws ConflitMetierException        si la transition est interdite (HTTP 409)
+     */
+    @Transactional
+    public InscriptionResponse changerStatut(Integer id, StatutInscription cible) {
+        Inscription inscription = inscriptionRepository.findById(id)
+                .orElseThrow(() -> new RessourceIntrouvableException("inscription", id));
+
+        StatutInscription actuel = StatutInscription.valueOf(inscription.getStatut());
+
+        if (!actuel.peutPasserA(cible)) {
+            throw new ConflitMetierException(CodeErreur.TRANSITION_INTERDITE,
+                    "Transition de statut interdite : " + actuel + " vers " + cible + ".");
+        }
+
+        // Aucune vérification de capacité ici : aucune transition ne ramène une inscription annulée
+        // à un statut actif, donc le nombre de places occupées ne peut pas augmenter.
+        inscription.setStatut(cible.name());
         return InscriptionResponse.from(inscriptionRepository.save(inscription));
     }
 }
