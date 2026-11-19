@@ -1,4 +1,3 @@
-
 <section class="page">
   <h1>Gestion des étudiants</h1>
 
@@ -10,9 +9,7 @@
     <p role="alert" class="error">{{ error() }}</p>
   }
 
-  <button type="button" (click)="ajouter()">
-    Ajouter un étudiant
-  </button>
+  <button type="button" (click)="ajouter()">Ajouter un étudiant</button>
 
   @if (loading()) {
     <p>Chargement des étudiants...</p>
@@ -40,9 +37,7 @@
             <td>
               <a [routerLink]="['/students', s.id]">Voir détails</a>
               |
-              <button type="button" (click)="modifier(s.id)">
-                Modifier
-              </button>
+              <button type="button" (click)="modifier(s.id)">Modifier</button>
             </td>
           </tr>
         }

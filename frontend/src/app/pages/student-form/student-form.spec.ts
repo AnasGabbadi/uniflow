@@ -1,16 +1,8 @@
-
 import { Component } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import {
-  ActivatedRoute,
-  convertToParamMap,
-  provideRouter,
-} from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 
 import { StudentForm } from './student-form';
 
@@ -73,9 +65,7 @@ describe('StudentForm', () => {
       http.expectNone('/api/etudiants');
 
       expect(composant.modeEdition).toBe(false);
-      expect(composant.messageErreur('nom')).toBe(
-        'This field is required.',
-      );
+      expect(composant.messageErreur('nom')).toBe('This field is required.');
     });
 
     it('refuse une adresse email invalide', () => {
@@ -84,9 +74,7 @@ describe('StudentForm', () => {
       composant.form.controls.email.markAsTouched();
 
       expect(composant.form.invalid).toBe(true);
-      expect(composant.messageErreur('email')).toBe(
-        'Please enter a valid email address.',
-      );
+      expect(composant.messageErreur('email')).toBe('Please enter a valid email address.');
 
       http.expectNone('/api/etudiants');
     });
@@ -97,9 +85,7 @@ describe('StudentForm', () => {
       composant.form.controls.dateNaissance.setValue('2099-01-01');
       composant.form.controls.dateNaissance.markAsTouched();
 
-      expect(composant.messageErreur('dateNaissance')).toBe(
-        'Date of birth must be in the past.',
-      );
+      expect(composant.messageErreur('dateNaissance')).toBe('Date of birth must be in the past.');
 
       http.expectNone('/api/etudiants');
     });
@@ -167,9 +153,7 @@ describe('StudentForm', () => {
         },
       );
 
-      expect(composant.messageErreur('email')).toBe(
-        'Format email incorrect.',
-      );
+      expect(composant.messageErreur('email')).toBe('Format email incorrect.');
     });
   });
 
@@ -190,9 +174,7 @@ describe('StudentForm', () => {
 
       expect(composant.modeEdition).toBe(true);
       expect(composant.form.controls.nom.value).toBe('El Azami');
-      expect(composant.form.controls.email.value).toBe(
-        'youssef@example.com',
-      );
+      expect(composant.form.controls.email.value).toBe('youssef@example.com');
 
       composant.form.controls.nom.setValue('El Hassani');
       composant.enregistrer();

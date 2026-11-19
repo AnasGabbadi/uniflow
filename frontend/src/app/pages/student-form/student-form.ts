@@ -1,9 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { UiFormField } from '../../components/shared/ui-form-field/ui-form-field';
@@ -29,14 +25,8 @@ export class StudentForm {
   readonly erreurServeur = signal<string | null>(null);
 
   readonly form = this.fb.group({
-    nom: this.fb.nonNullable.control('', [
-      Validators.required,
-      Validators.maxLength(100),
-    ]),
-    prenom: this.fb.nonNullable.control('', [
-      Validators.required,
-      Validators.maxLength(100),
-    ]),
+    nom: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(100)]),
+    prenom: this.fb.nonNullable.control('', [Validators.required, Validators.maxLength(100)]),
     email: this.fb.nonNullable.control('', [
       Validators.required,
       Validators.email,
@@ -46,9 +36,7 @@ export class StudentForm {
       Validators.maxLength(30),
       Validators.pattern(/^[0-9 +-]*$/),
     ]),
-    adresse: this.fb.nonNullable.control('', [
-      Validators.maxLength(255),
-    ]),
+    adresse: this.fb.nonNullable.control('', [Validators.maxLength(255)]),
     dateNaissance: this.fb.nonNullable.control('', [
       (control) => {
         const value = control.value as string;
@@ -79,9 +67,7 @@ export class StudentForm {
     return this.id !== null;
   }
 
-  messageErreur(
-    champ: keyof typeof this.form.controls,
-  ): string | null {
+  messageErreur(champ: keyof typeof this.form.controls): string | null {
     const controle = this.form.controls[champ];
 
     if (!controle.errors || !controle.touched) {
