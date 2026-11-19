@@ -10,6 +10,8 @@ public interface EtudiantRepository extends JpaRepository<Etudiant, Integer> {
 
     boolean existsByEmailIgnoreCase(String email);
 
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Integer id);
+
     List<Etudiant> findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(
             String nom, String prenom, Sort sort);
 }

@@ -50,7 +50,7 @@ class EtudiantServiceTest {
         when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(false);
         when(repository.save(any(Etudiant.class))).thenAnswer(inv -> {
             Etudiant e = inv.getArgument(0);
-            ReflectionTestUtils.setField(e, "id", 7);   // simule l'identifiant généré par la base
+            ReflectionTestUtils.setField(e, "id", 7);   
             return e;
         });
 
@@ -97,7 +97,7 @@ class EtudiantServiceTest {
         verify(repository, never()).save(any());
     }
 
-    // ---------- Consultation : détail  ----------
+    // ---------- Consultation : détail ----------
 
     @Test
     void trouverParIdRenvoieLEtudiant() {
@@ -121,7 +121,7 @@ class EtudiantServiceTest {
         assertEquals("Aucun étudiant avec l'identifiant 99.", exception.getMessage());
     }
 
-    // ---------- Consultation : liste et recherche  ----------
+    // ---------- Consultation : liste et recherche ----------
 
     @Test
     void listerSansRechercheRenvoieTousLesEtudiantsTriesParNomPuisPrenom() {
@@ -171,7 +171,54 @@ class EtudiantServiceTest {
         assertEquals(0, service.lister("zzz").size());
     }
 
-    // ---------- Outils de test ----------
+    // ---------- Modification  ----------
+
+    @Test
+    void modifierMetAJourLEtudiantAvecLesDonneesNettoyees() {
+        Etudiant existant = unEtudiant(7, "Ancien", "Nom", "ancien@example.ma");
+        when(repository.findById(7)).thenReturn(Optional.of(existant));
+        when(repository.existsByEmailIgnoreCaseAndIdNot("sara.elamrani@example.ma", 7)).thenReturn(false);
+        when(repository.save(any(Etudiant.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EtudiantResponse response = service.modifier(7, requete());
+
+        ArgumentCaptor<Etudiant> captor = ArgumentCaptor.forClass(Etudiant.class);
+        verify(repository).save(captor.capture());
+        Etudiant saved = captor.getValue();
+
+        assertEquals(7, saved.getId());                                  
+        assertEquals("El Amrani", saved.getNom());                       
+        assertEquals("Sara", saved.getPrenom());                         
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());      
+        assertEquals("+212 6 12 34 56 78", saved.getTelephone());
+        assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
+
+        assertEquals(7, response.id());
+        assertEquals("sara.elamrani@example.ma", response.email());
+    }
+
+    @Test
+    void modifierLeve404SiIdentifiantInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        assertThrows(RessourceIntrouvableException.class, () -> service.modifier(99, requete()));
+
+        verify(repository, never()).existsByEmailIgnoreCaseAndIdNot(any(), any());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void modifierRefuseUnEmailUtiliseParUnAutreEtudiant() {
+        when(repository.findById(7)).thenReturn(Optional.of(unEtudiant(7, "Ancien", "Nom", "ancien@example.ma")));
+        when(repository.existsByEmailIgnoreCaseAndIdNot("sara.elamrani@example.ma", 7)).thenReturn(true);
+
+        ConflitMetierException exception = assertThrows(ConflitMetierException.class,
+                () -> service.modifier(7, requete()));
+
+        assertEquals(CodeErreur.EMAIL_DEJA_UTILISE, exception.getCode());
+        verify(repository, never()).save(any());
+    }
+
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
         Etudiant e = new Etudiant();
