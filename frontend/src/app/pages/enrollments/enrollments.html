@@ -1,2 +1,160 @@
-<h1>Enrollments Management</h1>
-<p>Welcome to the enrollments page.</p>
+
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Enrollments Management</h1>
+      <p>Manage student enrollments and track their status.</p>
+    </div>
+
+    <button type="button" class="primary-button" (click)="afficherFormulaire()">
+      + New enrollment
+    </button>
+  </header>
+
+  @if (succes(); as message) {
+    <div class="success" role="status">{{ message }}</div>
+  }
+
+  @if (erreur(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  @if (formulaireVisible()) {
+    <section class="form-card">
+      <h2>New enrollment</h2>
+
+      <form #enrollmentForm="ngForm" (ngSubmit)="creer()">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="student">Student *</label>
+
+            <select
+              id="student"
+              name="student"
+              [(ngModel)]="nouvelleInscription.etudiantId"
+              required
+            >
+              <option [ngValue]="0" disabled>Select a student</option>
+
+              @for (etudiant of etudiants(); track etudiant.id) {
+                <option [ngValue]="etudiant.id">
+                  {{ etudiant.prenom }} {{ etudiant.nom }} ({{ etudiant.email }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="training">Training *</label>
+
+            <select
+              id="training"
+              name="training"
+              [(ngModel)]="nouvelleInscription.formationId"
+              required
+            >
+              <option [ngValue]="0" disabled>Select a training</option>
+
+              @for (formation of formations(); track formation.id) {
+                <option [ngValue]="formation.id">
+                  {{ formation.intitule }} — {{ formation.placesRestantes }} seats left
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="primary-button"
+            [disabled]="enrollmentForm.invalid || saving()"
+          >
+            {{ saving() ? 'Saving...' : 'Create enrollment' }}
+          </button>
+
+          <button type="button" class="secondary-button" (click)="annulerFormulaire()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <section class="list-section">
+    <h2>Enrollment list</h2>
+
+    @if (chargement()) {
+      <p class="state">Loading enrollments...</p>
+    } @else {
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Student</th>
+              <th scope="col">Email</th>
+              <th scope="col">Training</th>
+              <th scope="col">Enrollment date</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (inscription of inscriptions(); track inscription.id) {
+              <tr>
+                <td>#{{ inscription.id }}</td>
+
+                <td>
+                  {{ inscription.etudiant.prenom }}
+                  {{ inscription.etudiant.nom }}
+                </td>
+
+                <td>{{ inscription.etudiant.email }}</td>
+
+                <td>{{ inscription.formation.intitule }}</td>
+
+                <td>{{ inscription.dateInscription | date: 'dd/MM/yyyy' }}</td>
+
+                <td>
+                  <span class="badge" [attr.data-status]="inscription.statut">
+                    {{ libellesStatut[inscription.statut] }}
+                  </span>
+                </td>
+
+                <td>
+                  @if (inscription.statut !== 'ANNULEE') {
+                    <button
+                      type="button"
+                      class="link-danger"
+                      (click)="demanderAnnulation(inscription)"
+                    >
+                      Cancel enrollment
+                    </button>
+                  } @else {
+                    <span class="muted">No action</span>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="state">
+                  No enrollments found. Create the first enrollment.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>
+
+<app-confirmation-dialog
+  [open]="inscriptionAAnnuler() !== null"
+  title="Cancel enrollment"
+  [message]="messageConfirmation()"
+  (confirmed)="confirmerAnnulation()"
+  (cancelled)="annulerConfirmation()"
+></app-confirmation-dialog>
