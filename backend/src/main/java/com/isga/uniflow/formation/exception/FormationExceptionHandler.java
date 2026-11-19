@@ -58,6 +58,12 @@ public class FormationExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), null);
     }
 
+    /** Capacité inférieure au nombre d'inscriptions actives : 409. */
+    @ExceptionHandler(FormationCapaciteInsuffisanteException.class)
+    public ResponseEntity<Map<String, Object>> handleCapaciteInsuffisante(FormationCapaciteInsuffisanteException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
     /** Aucune formation pour l'identifiant demandé : 404. */
     @ExceptionHandler(FormationIntrouvableException.class)
     public ResponseEntity<Map<String, Object>> handleIntrouvable(FormationIntrouvableException ex) {

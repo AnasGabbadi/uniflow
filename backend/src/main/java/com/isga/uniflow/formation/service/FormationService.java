@@ -3,6 +3,7 @@ package com.isga.uniflow.formation.service;
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
 import com.isga.uniflow.formation.repository.FormationRepository;
@@ -84,6 +85,44 @@ public class FormationService {
                 .map(f -> FormationResponse.from(f,
                         placesRestantes(f, activesParFormation.getOrDefault(f.getId(), 0L))))
                 .toList();
+    }
+
+    /**
+     * Modifie une formation existante.
+     * Si le statut n'est pas fourni, le statut actuel est conservé.
+     *
+     * @throws FormationIntrouvableException          si l'identifiant est inconnu (HTTP 404)
+     * @throws FormationDejaExistanteException        si l'intitulé appartient à une autre formation (HTTP 409)
+     * @throws FormationCapaciteInsuffisanteException si la capacité est inférieure aux inscriptions actives (HTTP 409)
+     */
+    @Transactional
+    public FormationResponse modifier(Integer id, FormationRequest request) {
+        Formation formation = formationRepository.findById(id)
+                .orElseThrow(() -> new FormationIntrouvableException(id));
+
+        String intitule = request.intitule().trim();
+        if (formationRepository.existsByIntituleIgnoreCaseAndIdNot(intitule, id)) {
+            throw new FormationDejaExistanteException(intitule);
+        }
+
+        // On ne peut pas retirer des places déjà occupées par des inscriptions actives
+        long actives = formationRepository.compterInscriptionsActives(id);
+        if (request.capaciteMax() < actives) {
+            throw new FormationCapaciteInsuffisanteException(request.capaciteMax(), actives);
+        }
+
+        formation.setIntitule(intitule);
+        formation.setDescription(request.description());
+        formation.setDuree(request.duree());
+        formation.setCapaciteMax(request.capaciteMax());
+        formation.setDateDebut(request.dateDebut());
+        formation.setDateFin(request.dateFin());
+        if (request.statut() != null) {
+            formation.setStatut(request.statut());
+        }
+
+        Formation enregistree = formationRepository.save(formation);
+        return FormationResponse.from(enregistree, placesRestantes(enregistree, actives));
     }
 
     /**

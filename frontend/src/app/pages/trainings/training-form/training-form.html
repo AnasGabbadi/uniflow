@@ -1,0 +1,82 @@
+<section class="page">
+  <h1>{{ modeEdition ? 'Edit training' : 'New training' }}</h1>
+
+  @if (erreurServeur(); as message) {
+    <div class="alert" role="alert">{{ message }}</div>
+  }
+
+  @if (chargement()) {
+    <p class="state">Loading training…</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
+      <app-ui-form-field label="Title" controlId="intitule" [required]="true">
+        <input id="intitule" type="text" formControlName="intitule" maxlength="150" />
+      </app-ui-form-field>
+      @if (messageErreur('intitule'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <app-ui-form-field label="Description" controlId="description">
+        <textarea id="description" rows="4" formControlName="description"></textarea>
+      </app-ui-form-field>
+      @if (messageErreur('description'); as message) {
+        <small class="field-error">{{ message }}</small>
+      }
+
+      <div class="row">
+        <div>
+          <app-ui-form-field label="Duration (hours)" controlId="duree" [required]="true">
+            <input id="duree" type="number" min="1" step="1" formControlName="duree" />
+          </app-ui-form-field>
+          @if (messageErreur('duree'); as message) {
+            <small class="field-error">{{ message }}</small>
+          }
+        </div>
+
+        <div>
+          <app-ui-form-field label="Capacity" controlId="capaciteMax" [required]="true">
+            <input id="capaciteMax" type="number" min="1" step="1" formControlName="capaciteMax" />
+          </app-ui-form-field>
+          @if (messageErreur('capaciteMax'); as message) {
+            <small class="field-error">{{ message }}</small>
+          }
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <app-ui-form-field label="Start date" controlId="dateDebut" [required]="true">
+            <input id="dateDebut" type="date" formControlName="dateDebut" />
+          </app-ui-form-field>
+          @if (messageErreur('dateDebut'); as message) {
+            <small class="field-error">{{ message }}</small>
+          }
+        </div>
+
+        <div>
+          <app-ui-form-field label="End date" controlId="dateFin" [required]="true">
+            <input id="dateFin" type="date" formControlName="dateFin" />
+          </app-ui-form-field>
+          @if (messageErreur('dateFin'); as message) {
+            <small class="field-error">{{ message }}</small>
+          }
+        </div>
+      </div>
+
+      <app-ui-form-field label="Status" controlId="statut">
+        <select id="statut" formControlName="statut">
+          @for (statut of statuts; track statut[0]) {
+            <option [value]="statut[0]">{{ statut[1] }}</option>
+          }
+        </select>
+      </app-ui-form-field>
+
+      <div class="form-actions">
+        <a [routerLink]="modeEdition ? ['/trainings', id] : ['/trainings']">Cancel</a>
+        <button type="submit" class="primary" [disabled]="enCours()">
+          {{ enCours() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>
