@@ -2,10 +2,12 @@ package com.isga.uniflow.inscription.controller;
 
 import com.isga.uniflow.inscription.dto.InscriptionRequest;
 import com.isga.uniflow.inscription.dto.InscriptionResponse;
+import com.isga.uniflow.inscription.dto.StatutInscriptionRequest;
 import com.isga.uniflow.inscription.service.InscriptionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,5 +63,18 @@ public class InscriptionController {
     @GetMapping("/{id}")
     public ResponseEntity<InscriptionResponse> trouverParId(@PathVariable Integer id) {
         return ResponseEntity.ok(inscriptionService.trouverParId(id));
+    }
+
+    /**
+     * Change le statut d'une inscription. Sert aussi à l'ANNULER : {"statut": "ANNULEE"}.
+     * L'annulation libère une place : la capacité d'une formation ne compte que les inscriptions
+     * actives (EN_ATTENTE et VALIDEE).
+     * Réponses : 200 OK, 400 si statut absent/inconnu, 404 si l'inscription est inconnue,
+     * 409 si la transition de statut est interdite.
+     */
+    @PatchMapping("/{id}/statut")
+    public ResponseEntity<InscriptionResponse> changerStatut(@PathVariable Integer id,
+                                                             @Valid @RequestBody StatutInscriptionRequest request) {
+        return ResponseEntity.ok(inscriptionService.changerStatut(id, request.statut()));
     }
 }
