@@ -3,6 +3,7 @@ package com.isga.uniflow.formation.service;
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.formation.exception.FormationAvecInscriptionsException;
 import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
@@ -123,6 +124,28 @@ public class FormationService {
 
         Formation enregistree = formationRepository.save(formation);
         return FormationResponse.from(enregistree, placesRestantes(enregistree, actives));
+    }
+
+    /**
+     * Supprime une formation.
+     * Politique : la suppression est refusée dès que la formation a au moins une inscription, quel que
+     * soit son statut (les inscriptions annulées sont de l'historique et la clé étrangère les protège).
+     * On ne supprime donc que les formations sans aucune inscription.
+     *
+     * @throws FormationIntrouvableException        si l'identifiant est inconnu (HTTP 404)
+     * @throws FormationAvecInscriptionsException   si la formation a des inscriptions (HTTP 409)
+     */
+    @Transactional
+    public void supprimer(Integer id) {
+        Formation formation = formationRepository.findById(id)
+                .orElseThrow(() -> new FormationIntrouvableException(id));
+
+        long inscriptions = formationRepository.compterToutesInscriptions(id);
+        if (inscriptions > 0) {
+            throw new FormationAvecInscriptionsException(id, inscriptions);
+        }
+
+        formationRepository.delete(formation);
     }
 
     /**
