@@ -64,6 +64,12 @@ public class FormationExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), null);
     }
 
+    /** Suppression refusée car la formation a des inscriptions : 409. */
+    @ExceptionHandler(FormationAvecInscriptionsException.class)
+    public ResponseEntity<Map<String, Object>> handleAvecInscriptions(FormationAvecInscriptionsException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), null);
+    }
+
     /** Aucune formation pour l'identifiant demandé : 404. */
     @ExceptionHandler(FormationIntrouvableException.class)
     public ResponseEntity<Map<String, Object>> handleIntrouvable(FormationIntrouvableException ex) {

@@ -5,6 +5,7 @@ import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.service.FormationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -71,5 +72,16 @@ public class FormationController {
     @GetMapping
     public ResponseEntity<List<FormationResponse>> trouverToutes() {
         return ResponseEntity.ok(formationService.trouverToutes());
+    }
+
+    /**
+     * Supprime une formation qui n'a aucune inscription.
+     * Réponses : 204 No Content, 404 si l'identifiant est inconnu,
+     * 409 si la formation a des inscriptions, 400 si l'identifiant n'est pas un nombre.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> supprimer(@PathVariable Integer id) {
+        formationService.supprimer(id);
+        return ResponseEntity.noContent().build();
     }
 }

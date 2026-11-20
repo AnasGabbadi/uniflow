@@ -1,6 +1,7 @@
 package com.isga.uniflow.formation.controller;
 
 import com.isga.uniflow.formation.dto.FormationResponse;
+import com.isga.uniflow.formation.exception.FormationAvecInscriptionsException;
 import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationExceptionHandler;
@@ -24,6 +25,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -374,6 +377,46 @@ class FormationControllerTest {
     }
 
     /** Réponse de formation toute prête, telle que la renverrait le service. */
+    // ============================================================
+    // DELETE /api/formations/{id}
+    // ============================================================
+
+    @Test
+    void supprimer_DoitRetourner204() throws Exception {
+        mockMvc.perform(delete(URL + "/5"))
+                .andExpect(status().isNoContent());
+
+        verify(formationService).supprimer(5);
+    }
+
+    @Test
+    void supprimer_DoitRetourner404SiIdentifiantInconnu() throws Exception {
+        doThrow(new FormationIntrouvableException(99)).when(formationService).supprimer(99);
+
+        mockMvc.perform(delete(URL + "/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void supprimer_DoitRetourner409SiLaFormationADesInscriptions() throws Exception {
+        doThrow(new FormationAvecInscriptionsException(5, 3L)).when(formationService).supprimer(5);
+
+        mockMvc.perform(delete(URL + "/5"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.message").value(
+                        "La formation 5 ne peut pas être supprimée : elle compte 3 inscription(s)"));
+    }
+
+    @Test
+    void supprimer_DoitRetourner400SiLIdentifiantNEstPasUnNombre() throws Exception {
+        mockMvc.perform(delete(URL + "/abc"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(formationService);
+    }
+
     private FormationResponse uneReponse(int id, String intitule, int duree, int placesRestantes) {
         return new FormationResponse(id, intitule, "Formation backend Java", duree, 20,
                 LocalDate.of(2026, 12, 1), LocalDate.of(2027, 1, 1), "OUVERTE", placesRestantes);

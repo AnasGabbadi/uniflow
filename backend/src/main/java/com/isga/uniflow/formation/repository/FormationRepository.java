@@ -33,6 +33,10 @@ public interface FormationRepository extends JpaRepository<Formation, Integer> {
             """, nativeQuery = true)
     long compterInscriptionsActives(@Param("idFormation") Integer idFormation);
 
+    /** Nombre total d'inscriptions d'une formation, tous statuts confondus (sert à la suppression). */
+    @Query(value = "SELECT COUNT(*) FROM inscription WHERE id_formation = :idFormation", nativeQuery = true)
+    long compterToutesInscriptions(@Param("idFormation") Integer idFormation);
+
     /**
      * Nombre d'inscriptions actives pour chaque formation, en une seule requête (évite une requête
      * par formation dans la liste). Chaque ligne : [id_formation, nombre]. Les formations sans

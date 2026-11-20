@@ -3,6 +3,7 @@ package com.isga.uniflow.formation.service;
 import com.isga.uniflow.formation.dto.FormationRequest;
 import com.isga.uniflow.formation.dto.FormationResponse;
 import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.formation.exception.FormationAvecInscriptionsException;
 import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
 import com.isga.uniflow.formation.exception.FormationIntrouvableException;
@@ -253,5 +254,42 @@ class FormationServiceTest {
         f.setDateFin(LocalDate.of(2026, 12, 20));
         f.setStatut(Formation.STATUT_OUVERTE);
         return f;
+    }
+
+    // ---------- Suppression ----------
+
+    @Test
+    void supprimerEffaceLaFormationSansInscription() {
+        Formation formation = new Formation();
+        ReflectionTestUtils.setField(formation, "id", 5);
+        when(repository.findById(5)).thenReturn(Optional.of(formation));
+        when(repository.compterToutesInscriptions(5)).thenReturn(0L);
+
+        service.supprimer(5);
+
+        verify(repository).delete(formation);
+    }
+
+    @Test
+    void supprimerLeveUneExceptionSiLIdentifiantEstInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        assertThrows(FormationIntrouvableException.class, () -> service.supprimer(99));
+
+        verify(repository, never()).delete(any(Formation.class));
+    }
+
+    @Test
+    void supprimerRefuseSiLaFormationADesInscriptions() {
+        Formation formation = new Formation();
+        ReflectionTestUtils.setField(formation, "id", 5);
+        when(repository.findById(5)).thenReturn(Optional.of(formation));
+        when(repository.compterToutesInscriptions(5)).thenReturn(3L);
+
+        FormationAvecInscriptionsException ex =
+                assertThrows(FormationAvecInscriptionsException.class, () -> service.supprimer(5));
+
+        assertEquals("La formation 5 ne peut pas être supprimée : elle compte 3 inscription(s)", ex.getMessage());
+        verify(repository, never()).delete(any(Formation.class));
     }
 }
