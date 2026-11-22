@@ -150,7 +150,7 @@ DB_URL=jdbc:postgresql://localhost:5432/uniflow DB_PASSWORD=<votre mot de passe>
 
 | Action | Commande |
 |---|---|
-| Tests back-end + rapport de couverture JaCoCo | `cd backend && ./mvnw verify` (base démarrée) |
+| Tests back-end + rapport de couverture JaCoCo | `cd backend && ./mvnw verify` (Docker lancé : la base de test est créée par Testcontainers) |
 | Lint front-end | `cd frontend && npm run lint` |
 | Format front-end | `cd frontend && npm run format:check` |
 | Build front-end | `cd frontend && npm run build` |
@@ -171,8 +171,9 @@ La fusion est bloquée si la CI ou la Quality Gate échoue.
 
 ## Règles de travail
 
-- Workflow Git complet (cycle d'une fonctionnalité, revues, releases, hotfix) : [docs/git-workflow.md](docs/git-workflow.md)
+- Workflow Git complet (...) : [docs/git-workflow.md](docs/git-workflow.md)
 - Quand un ticket est-il terminé ? [docs/definition-of-done.md](docs/definition-of-done.md)
+- Stratégie de test, Testcontainers et commandes : [docs/tests.md](docs/tests.md)
 - Persistance de la base (volume `db-data`, script de vérification) : [docs/persistence.md](docs/persistence.md)
 
 ### Branches
