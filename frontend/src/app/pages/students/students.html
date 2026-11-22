@@ -1,5 +1,12 @@
 <section class="page">
-  <h1>Gestion des étudiants</h1>
+  <div class="page-header">
+    <div>
+      <h1>Gestion des étudiants</h1>
+      <p>Recherchez et consultez les étudiants inscrits.</p>
+    </div>
+
+    <button type="button" class="add-button" (click)="ajouter()">Ajouter un étudiant</button>
+  </div>
 
   @if (success()) {
     <p role="status" class="success">{{ success() }}</p>
@@ -9,39 +16,75 @@
     <p role="alert" class="error">{{ error() }}</p>
   }
 
-  <button type="button" (click)="ajouter()">Ajouter un étudiant</button>
+  <div class="filters">
+    <div class="filter-group">
+      <label for="student-search">Rechercher par nom ou prénom</label>
+      <input
+        id="student-search"
+        type="search"
+        placeholder="Saisir un nom ou un prénom..."
+        [value]="searchTerm()"
+        (input)="rechercher($any($event.target).value)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <label for="formation-filter">Filtrer par formation</label>
+      <select
+        id="formation-filter"
+        [value]="selectedFormationId() ?? ''"
+        (change)="changerFormation($any($event.target).value)"
+      >
+        <option value="">Toutes les formations</option>
+        @for (formation of formations(); track formation.id) {
+          <option [value]="formation.id">{{ formation.intitule }}</option>
+        }
+      </select>
+    </div>
+  </div>
 
   @if (loading()) {
-    <p>Chargement des étudiants...</p>
+    <p class="loading">Chargement des étudiants...</p>
+  } @else if (filterLoading()) {
+    <p class="loading">Chargement des étudiants de cette formation...</p>
   } @else if (students().length === 0) {
-    <p>Aucun étudiant enregistré pour le moment.</p>
+    <div class="empty-state">
+      <h2>No students found</h2>
+      <p>Aucun étudiant ne correspond à votre recherche ou à la formation sélectionnée.</p>
+    </div>
   } @else {
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">Nom</th>
-          <th scope="col">Prénom</th>
-          <th scope="col">Email</th>
-          <th scope="col">Téléphone</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
+    <div class="results-info">
+      {{ students().length }}
+      étudiant(s) trouvé(s)
+    </div>
 
-      <tbody>
-        @for (s of students(); track s.id) {
+    <div class="table-container">
+      <table>
+        <thead>
           <tr>
-            <td>{{ s.nom }}</td>
-            <td>{{ s.prenom }}</td>
-            <td>{{ s.email }}</td>
-            <td>{{ s.telephone ?? '—' }}</td>
-            <td>
-              <a [routerLink]="['/students', s.id]">Voir détails</a>
-              |
-              <button type="button" (click)="modifier(s.id)">Modifier</button>
-            </td>
+            <th scope="col">Nom</th>
+            <th scope="col">Prénom</th>
+            <th scope="col">Email</th>
+            <th scope="col">Téléphone</th>
+            <th scope="col">Actions</th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+
+        <tbody>
+          @for (s of students(); track s.id) {
+            <tr>
+              <td>{{ s.nom }}</td>
+              <td>{{ s.prenom }}</td>
+              <td>{{ s.email }}</td>
+              <td>{{ s.telephone ?? '—' }}</td>
+              <td class="actions">
+                <a [routerLink]="['/students', s.id]">Voir détails</a>
+                <button type="button" (click)="modifier(s.id)">Modifier</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
 </section>
