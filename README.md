@@ -173,6 +173,7 @@ La fusion est bloquée si la CI ou la Quality Gate échoue.
 
 - Workflow Git complet (cycle d'une fonctionnalité, revues, releases, hotfix) : [docs/git-workflow.md](docs/git-workflow.md)
 - Quand un ticket est-il terminé ? [docs/definition-of-done.md](docs/definition-of-done.md)
+- Persistance de la base (volume `db-data`, script de vérification) : [docs/persistence.md](docs/persistence.md)
 
 ### Branches
 - `main` : versions stables et livrées (protégée).
