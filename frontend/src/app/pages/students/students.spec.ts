@@ -18,12 +18,16 @@ describe('Students', () => {
   });
 
   afterEach(() => {
-    http.verify(); // aucune requête ne doit rester en vol
+    http.verify();
   });
 
   function render() {
     const fixture = TestBed.createComponent(Students);
-    fixture.detectChanges(); // déclenche ngOnInit → load() → requête HTTP
+    fixture.detectChanges();
+
+    // Simuler la réponse de la requête des formations
+    http.expectOne((req) => req.url.includes('/api/formations')).flush([]);
+
     return fixture;
   }
 
@@ -66,7 +70,10 @@ describe('Students', () => {
 
     http
       .expectOne((req) => req.url.includes('/api/etudiants'))
-      .flush(null, { status: 500, statusText: 'Server Error' });
+      .flush(null, {
+        status: 500,
+        statusText: 'Server Error',
+      });
 
     await fixture.whenStable();
     fixture.detectChanges();
