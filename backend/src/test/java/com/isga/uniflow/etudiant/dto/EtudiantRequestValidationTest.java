@@ -126,4 +126,35 @@ class EtudiantRequestValidationTest {
         assertEquals(1, violations.size());
         assertTrue(erreurSurChamp(violations, "dateNaissance"));
     }
+
+    @Test
+    void prenomVideEstRefuse() {
+        assertTrue(erreurSurChamp(valider(new EtudiantRequest("El Amrani", "", "sara@example.ma", null, null, null)), "prenom"));
+    }
+
+    @Test
+    void prenomDePlusDe100CaracteresEstRefuse() {
+        assertTrue(erreurSurChamp(valider(new EtudiantRequest("El Amrani", "a".repeat(101), "sara@example.ma", null, null, null)), "prenom"));
+    }
+
+    @Test
+    void emailVideEstRefuse() {
+        assertTrue(erreurSurChamp(valider(new EtudiantRequest("El Amrani", "Sara", "", null, null, null)), "email"));
+    }
+
+    @Test
+    void emailDePlusDe255CaracteresEstRefuse() {
+        String email = "a".repeat(251) + "@x.ma";   // 256 caractères
+        assertTrue(erreurSurChamp(valider(new EtudiantRequest("El Amrani", "Sara", email, null, null, null)), "email"));
+    }
+
+    @Test
+    void telephoneAvecChiffresEspacesPlusEtTiretEstAccepte() {
+        assertTrue(valider(new EtudiantRequest("El Amrani", "Sara", "sara@example.ma", "+212 6-12 34 56 78", null, null)).isEmpty());
+    }
+
+    @Test
+    void dateDeNaissanceAujourdhuiEstRefusee() {
+        assertTrue(erreurSurChamp(valider(new EtudiantRequest("El Amrani", "Sara", "sara@example.ma", null, null, LocalDate.now())), "dateNaissance"));
+    }
 }
