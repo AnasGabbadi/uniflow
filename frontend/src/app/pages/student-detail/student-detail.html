@@ -1,0 +1,22 @@
+<a routerLink="/students">← Back to students</a>
+
+@if (loading()) {
+  <app-ui-loading label="Loading student…"></app-ui-loading>
+} @else if (notFound()) {
+  <h1>Student not found</h1>
+  <p>This student does not exist or has been deleted.</p>
+} @else if (error(); as message) {
+  <app-ui-alert [message]="message" [retryable]="true" (retry)="charger()"></app-ui-alert>
+} @else if (student(); as s) {
+  <h1>{{ s.prenom }} {{ s.nom }}</h1>
+  <dl>
+    <dt>Email</dt>
+    <dd>{{ s.email }}</dd>
+    <dt>Téléphone</dt>
+    <dd>{{ s.telephone ?? '—' }}</dd>
+    <dt>Adresse</dt>
+    <dd>{{ s.adresse ?? '—' }}</dd>
+    <dt>Date de naissance</dt>
+    <dd>{{ s.dateNaissance ? (s.dateNaissance | date: 'dd/MM/yyyy') : '—' }}</dd>
+  </dl>
+}

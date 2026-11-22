@@ -1,0 +1,78 @@
+<section class="page">
+  <header class="page-header">
+    <h1>Trainings Management</h1>
+    <app-ui-button label="New training" (clicked)="creer()"></app-ui-button>
+  </header>
+
+  @if (erreur(); as message) {
+    <app-ui-alert
+      [message]="message"
+      [retryable]="chargementEchoue()"
+      (retry)="charger()"
+    ></app-ui-alert>
+  }
+
+  @if (chargement()) {
+    <app-ui-loading label="Loading trainings…"></app-ui-loading>
+  } @else if (!chargementEchoue()) {
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Title</th>
+          <th scope="col">Duration</th>
+          <th scope="col">Dates</th>
+          <th scope="col">Capacity</th>
+          <th scope="col">Seats left</th>
+          <th scope="col">Status</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (formation of formations(); track formation.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/trainings', formation.id]">{{ formation.intitule }}</a>
+            </td>
+            <td>{{ formation.duree }} h</td>
+            <td>
+              {{ formation.dateDebut ? (formation.dateDebut | date: 'dd/MM/yyyy') : '—' }}
+              →
+              {{ formation.dateFin ? (formation.dateFin | date: 'dd/MM/yyyy') : '—' }}
+            </td>
+            <td>{{ formation.capaciteMax }}</td>
+            <td>{{ formation.placesRestantes }}</td>
+            <td>
+              <span class="badge" [attr.data-status]="formation.statut">
+                {{ libellesStatut[formation.statut] }}
+              </span>
+            </td>
+            <td class="actions">
+              <a [routerLink]="['/trainings', formation.id]">View</a>
+              <a [routerLink]="['/trainings', formation.id, 'edit']">Edit</a>
+              <button
+                type="button"
+                class="link-danger"
+                [disabled]="suppressionEnCours()"
+                (click)="demanderSuppression(formation)"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="state">No training yet. Create the first one.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
+
+<app-confirmation-dialog
+  [open]="aSupprimer() !== null"
+  title="Delete training"
+  [message]="messageSuppression()"
+  (confirmed)="confirmerSuppression()"
+  (cancelled)="annulerSuppression()"
+></app-confirmation-dialog>

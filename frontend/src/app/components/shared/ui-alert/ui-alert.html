@@ -1,0 +1,10 @@
+<div
+  class="ui-alert"
+  [attr.data-variant]="variant()"
+  [attr.role]="variant() === 'error' ? 'alert' : 'status'"
+>
+  <span class="message">{{ message() }}</span>
+  @if (retryable()) {
+    <app-ui-button label="Retry" variant="secondary" (clicked)="retry.emit()"></app-ui-button>
+  }
+</div>

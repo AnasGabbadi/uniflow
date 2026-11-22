@@ -47,6 +47,18 @@ uniflow/
 
 > Le back-end et le front-end sont séparés pour que chaque binôme travaille dans son dossier. Les fichiers demandés par le cahier des charges (`Dockerfile`, `.dockerignore`, `pom.xml`, `src/`) se trouvent dans `backend/`, et `compose.yaml` à la racine orchestre l'ensemble.
 
+
+## Architecture Principles
+
+- **Feature-based organization:** Each business feature has its own isolated package.
+- **Separation of concerns:** Every layer has a clearly defined responsibility.
+- **Code reusability:** Shared components are placed in `common/`.
+- **Maintainability:** Features can evolve independently.
+- **Team collaboration:** Developers can work on different features with minimal conflicts.
+- **Testability:** Each feature has a corresponding test package.
+
+
+
 ## Prérequis
 
 | Outil | Version | Vérification |
@@ -138,7 +150,7 @@ DB_URL=jdbc:postgresql://localhost:5432/uniflow DB_PASSWORD=<votre mot de passe>
 
 | Action | Commande |
 |---|---|
-| Tests back-end + rapport de couverture JaCoCo | `cd backend && ./mvnw verify` (base démarrée) |
+| Tests back-end + rapport de couverture JaCoCo | `cd backend && ./mvnw verify` (Docker lancé : la base de test est créée par Testcontainers) |
 | Lint front-end | `cd frontend && npm run lint` |
 | Format front-end | `cd frontend && npm run format:check` |
 | Build front-end | `cd frontend && npm run build` |
@@ -159,8 +171,10 @@ La fusion est bloquée si la CI ou la Quality Gate échoue.
 
 ## Règles de travail
 
-- Workflow Git complet (cycle d'une fonctionnalité, revues, releases, hotfix) : [docs/git-workflow.md](docs/git-workflow.md)
+- Workflow Git complet (...) : [docs/git-workflow.md](docs/git-workflow.md)
 - Quand un ticket est-il terminé ? [docs/definition-of-done.md](docs/definition-of-done.md)
+- Stratégie de test, Testcontainers et commandes : [docs/tests.md](docs/tests.md)
+- Persistance de la base (volume `db-data`, script de vérification) : [docs/persistence.md](docs/persistence.md)
 
 ### Branches
 - `main` : versions stables et livrées (protégée).

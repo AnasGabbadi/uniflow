@@ -1,0 +1,96 @@
+<section class="page">
+  <div class="page-header">
+    <div>
+      <h1>Gestion des étudiants</h1>
+      <p>Recherchez et consultez les étudiants inscrits.</p>
+    </div>
+
+    <button type="button" class="add-button" (click)="ajouter()">Ajouter un étudiant</button>
+  </div>
+
+  @if (success(); as message) {
+    <app-ui-alert variant="success" [message]="message"></app-ui-alert>
+  }
+
+  @if (error(); as message) {
+    <app-ui-alert
+      [message]="message"
+      [retryable]="echecChargement()"
+      (retry)="reessayer()"
+    ></app-ui-alert>
+  }
+
+  <div class="filters">
+    <div class="filter-group">
+      <label for="student-search">Rechercher par nom ou prénom</label>
+      <input
+        id="student-search"
+        type="search"
+        placeholder="Saisir un nom ou un prénom..."
+        [value]="searchTerm()"
+        (input)="rechercher($any($event.target).value)"
+      />
+    </div>
+
+    <div class="filter-group">
+      <label for="formation-filter">Filtrer par formation</label>
+      <select
+        id="formation-filter"
+        [value]="selectedFormationId() ?? ''"
+        (change)="changerFormation($any($event.target).value)"
+      >
+        <option value="">Toutes les formations</option>
+        @for (formation of formations(); track formation.id) {
+          <option [value]="formation.id">{{ formation.intitule }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-ui-loading label="Loading students…"></app-ui-loading>
+  } @else if (filterLoading()) {
+    <app-ui-loading label="Loading students of this training…"></app-ui-loading>
+  } @else if (echecChargement()) {
+    <!-- Échec du chargement : seule l'alerte (avec Retry) est affichée. -->
+  } @else if (students().length === 0) {
+    <div class="empty-state">
+      <h2>No students found</h2>
+      <p>Aucun étudiant ne correspond à votre recherche ou à la formation sélectionnée.</p>
+    </div>
+  } @else {
+    <div class="results-info">
+      {{ students().length }}
+      étudiant(s) trouvé(s)
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Nom</th>
+            <th scope="col">Prénom</th>
+            <th scope="col">Email</th>
+            <th scope="col">Téléphone</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (s of students(); track s.id) {
+            <tr>
+              <td>{{ s.nom }}</td>
+              <td>{{ s.prenom }}</td>
+              <td>{{ s.email }}</td>
+              <td>{{ s.telephone ?? '—' }}</td>
+              <td class="actions">
+                <a [routerLink]="['/students', s.id]">Voir détails</a>
+                <button type="button" (click)="modifier(s.id)">Modifier</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
