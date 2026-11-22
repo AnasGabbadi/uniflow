@@ -4,6 +4,42 @@
   background: #f5f7fb;
 }
 
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: #cbd5e1;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: #38bdf8;
+  animation: progression 1.1s ease-in-out infinite;
+}
+
+@keyframes progression {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-bar::after {
+    width: 100%;
+    animation: none;
+  }
+}
+
 .header {
   display: flex;
   justify-content: space-between;

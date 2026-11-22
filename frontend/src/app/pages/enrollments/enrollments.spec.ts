@@ -1,4 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { Inscription } from '../../models/inscription.model';
+import { MESSAGES_PAR_CODE, MESSAGE_SERVEUR_INJOIGNABLE } from '../../services/api-error-messages';
 import { Enrollments } from './enrollments';
 
 describe('Enrollments', () => {
@@ -17,5 +22,114 @@ describe('Enrollments', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+});
+
+describe('Enrollments — chargement et erreurs (IP-45)', () => {
+  let http: HttpTestingController;
+
+  const inscription = {
+    id: 4,
+    etudiant: { id: 1, nom: 'El Amrani', prenom: 'Sara', email: 'sara@example.ma' },
+    formation: { id: 2, intitule: 'DevOps' },
+    dateInscription: '2026-11-20',
+    statut: 'EN_ATTENTE',
+  } as Inscription;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [Enrollments],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  function charger(inscriptions: Inscription[]): ComponentFixture<Enrollments> {
+    const fixture = TestBed.createComponent(Enrollments);
+    http.expectOne('/api/inscriptions').flush(inscriptions);
+    http.expectOne('/api/etudiants').flush([]);
+    http.expectOne('/api/formations').flush([]);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it("l'échec d'une liste secondaire n'écrase pas l'erreur principale", () => {
+    const fixture = TestBed.createComponent(Enrollments);
+    http.expectOne('/api/inscriptions').error(new ProgressEvent('error'));
+    http
+      .expectOne('/api/etudiants')
+      .flush({ code: 'ERREUR_INTERNE' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne('/api/formations').flush([]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.erreur()).toBe(MESSAGE_SERVEUR_INJOIGNABLE);
+    expect(fixture.componentInstance.chargement()).toBe(false);
+  });
+
+  it('traduit le 409 INSCRIPTION_EN_DOUBLE en anglais', () => {
+    const fixture = charger([]);
+    const composant = fixture.componentInstance;
+    composant.nouvelleInscription.etudiantId = 1;
+    composant.nouvelleInscription.formationId = 2;
+
+    composant.creer();
+    http
+      .expectOne('/api/inscriptions')
+      .flush(
+        { detail: "L'étudiant est déjà inscrit.", code: 'INSCRIPTION_EN_DOUBLE' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(composant.erreur()).toBe(MESSAGES_PAR_CODE.INSCRIPTION_EN_DOUBLE);
+    expect(composant.saving()).toBe(false);
+  });
+
+  it('désactive « Cancel enrollment » pendant la requête d’annulation', () => {
+    const fixture = charger([inscription]);
+    const composant = fixture.componentInstance;
+
+    composant.demanderAnnulation(inscription);
+    composant.confirmerAnnulation();
+    fixture.detectChanges();
+
+    const bouton = (fixture.nativeElement as HTMLElement).querySelector(
+      'button.link-danger',
+    ) as HTMLButtonElement;
+    expect(composant.annulationEnCours()).toBe(true);
+    expect(bouton.disabled).toBe(true);
+
+    http
+      .expectOne((req) => req.url.startsWith('/api/inscriptions/4'))
+      .flush({ ...inscription, statut: 'ANNULEE' });
+    fixture.detectChanges();
+
+    expect(composant.annulationEnCours()).toBe(false);
+    expect(composant.succes()).toContain('cancelled');
+  });
+
+  it("n'affiche ni le tableau ni l'état vide si le chargement échoue", () => {
+    const fixture = TestBed.createComponent(Enrollments);
+    http
+      .expectOne('/api/inscriptions')
+      .flush('<html>502 Bad Gateway</html>', { status: 502, statusText: 'Bad Gateway' });
+    http.expectOne('/api/etudiants').flush([]);
+    http.expectOne('/api/formations').flush([]);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.chargementEchoue()).toBe(true);
+    expect(element.querySelector('app-ui-alert button')?.textContent).toContain('Retry');
+    expect(element.querySelector('table')).toBeNull();
+    expect(element.textContent).not.toContain('No enrollments found');
+  });
+
+  it("affiche l'état vide seulement si le chargement réussit avec une liste vide", () => {
+    const fixture = charger([]);
+    const element = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.chargementEchoue()).toBe(false);
+    expect(element.textContent).toContain('No enrollments found');
   });
 });

@@ -2,11 +2,18 @@
   <a routerLink="/trainings">← Back to trainings</a>
 
   @if (erreur(); as message) {
-    <div class="alert" role="alert">{{ message }}</div>
+    <app-ui-alert
+      [message]="message"
+      [retryable]="formation() === null"
+      (retry)="charger()"
+    ></app-ui-alert>
   }
 
   @if (chargement()) {
-    <p class="state">Loading training…</p>
+    <app-ui-loading label="Loading training…"></app-ui-loading>
+  } @else if (introuvable()) {
+    <h1>Training not found</h1>
+    <p class="state">This training does not exist or has been deleted.</p>
   } @else if (formation(); as f) {
     <header class="page-header">
       <h1>{{ f.intitule }}</h1>
@@ -36,7 +43,14 @@
 
     <div class="actions">
       <a class="primary" [routerLink]="['/trainings', f.id, 'edit']">Edit</a>
-      <button type="button" class="danger" (click)="confirmationOuverte.set(true)">Delete</button>
+      <button
+        type="button"
+        class="danger"
+        [disabled]="suppressionEnCours()"
+        (click)="confirmationOuverte.set(true)"
+      >
+        {{ suppressionEnCours() ? 'Deleting…' : 'Delete' }}
+      </button>
     </div>
 
     <app-confirmation-dialog

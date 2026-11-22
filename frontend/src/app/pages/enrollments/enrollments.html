@@ -11,11 +11,15 @@
   </header>
 
   @if (succes(); as message) {
-    <div class="success" role="status">{{ message }}</div>
+    <app-ui-alert variant="success" [message]="message"></app-ui-alert>
   }
 
   @if (erreur(); as message) {
-    <div class="alert" role="alert">{{ message }}</div>
+    <app-ui-alert
+      [message]="message"
+      [retryable]="chargementEchoue()"
+      (retry)="charger()"
+    ></app-ui-alert>
   }
 
   @if (formulaireVisible()) {
@@ -84,8 +88,8 @@
     <h2>Enrollment list</h2>
 
     @if (chargement()) {
-      <p class="state">Loading enrollments...</p>
-    } @else {
+      <app-ui-loading label="Loading enrollments…"></app-ui-loading>
+    } @else if (!chargementEchoue()) {
       <div class="table-container">
         <table class="table">
           <thead>
@@ -127,6 +131,7 @@
                     <button
                       type="button"
                       class="link-danger"
+                      [disabled]="annulationEnCours()"
                       (click)="demanderAnnulation(inscription)"
                     >
                       Cancel enrollment

@@ -8,12 +8,16 @@
     <button type="button" class="add-button" (click)="ajouter()">Ajouter un étudiant</button>
   </div>
 
-  @if (success()) {
-    <p role="status" class="success">{{ success() }}</p>
+  @if (success(); as message) {
+    <app-ui-alert variant="success" [message]="message"></app-ui-alert>
   }
 
-  @if (error()) {
-    <p role="alert" class="error">{{ error() }}</p>
+  @if (error(); as message) {
+    <app-ui-alert
+      [message]="message"
+      [retryable]="echecChargement()"
+      (retry)="reessayer()"
+    ></app-ui-alert>
   }
 
   <div class="filters">
@@ -44,9 +48,11 @@
   </div>
 
   @if (loading()) {
-    <p class="loading">Chargement des étudiants...</p>
+    <app-ui-loading label="Loading students…"></app-ui-loading>
   } @else if (filterLoading()) {
-    <p class="loading">Chargement des étudiants de cette formation...</p>
+    <app-ui-loading label="Loading students of this training…"></app-ui-loading>
+  } @else if (echecChargement()) {
+    <!-- Échec du chargement : seule l'alerte (avec Retry) est affichée. -->
   } @else if (students().length === 0) {
     <div class="empty-state">
       <h2>No students found</h2>

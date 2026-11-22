@@ -3,17 +3,19 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ConfirmationDialog } from '../../components/shared/confirmation-dialog/confirmation-dialog';
+import { UiAlert } from '../../components/shared/ui-alert/ui-alert';
+import { UiLoading } from '../../components/shared/ui-loading/ui-loading';
 import { Etudiant } from '../../models/etudiant.model';
 import { Formation } from '../../models/formation.model';
 import { Inscription, InscriptionRequest, StatutInscription } from '../../models/inscription.model';
-import { lireErreurApi } from '../../services/api-error.util';
+import { messageErreurApi } from '../../services/api-error-messages';
 import { EtudiantService } from '../../services/etudiant.service';
 import { FormationService } from '../../services/formation.service';
 import { InscriptionService } from '../../services/inscription.service';
 
 @Component({
   selector: 'app-enrollments',
-  imports: [DatePipe, FormsModule, ConfirmationDialog],
+  imports: [DatePipe, FormsModule, ConfirmationDialog, UiAlert, UiLoading],
   templateUrl: './enrollments.html',
   styleUrl: './enrollments.scss',
 })
@@ -30,6 +32,10 @@ export class Enrollments {
   readonly saving = signal(false);
   readonly erreur = signal<string | null>(null);
   readonly succes = signal<string | null>(null);
+  /** Vrai si le chargement de la liste a échoué : ni tableau ni état vide, seulement l'alerte + Retry. */
+  readonly chargementEchoue = signal(false);
+  /** Vrai pendant la requête d'annulation : les boutons « Cancel enrollment » sont désactivés. */
+  readonly annulationEnCours = signal(false);
 
   readonly formulaireVisible = signal(false);
   readonly inscriptionAAnnuler = signal<Inscription | null>(null);
@@ -60,6 +66,7 @@ export class Enrollments {
   charger(): void {
     this.chargement.set(true);
     this.erreur.set(null);
+    this.chargementEchoue.set(false);
 
     this.inscriptionService.lister().subscribe({
       next: (inscriptions) => {
@@ -67,20 +74,28 @@ export class Enrollments {
         this.chargement.set(false);
       },
       error: (err: unknown) => {
-        this.erreur.set(lireErreurApi(err).message);
+        this.erreur.set(messageErreurApi(err));
+        this.chargementEchoue.set(true);
         this.chargement.set(false);
       },
     });
 
+    // Listes des sélecteurs : leur échec n'écrase pas l'erreur du chargement principal.
     this.etudiantService.lister().subscribe({
       next: (etudiants) => this.etudiants.set(etudiants),
-      error: (err: unknown) => this.erreur.set(lireErreurApi(err).message),
+      error: (err: unknown) => this.erreurSecondaire(err),
     });
 
     this.formationService.lister().subscribe({
       next: (formations) => this.formations.set(formations),
-      error: (err: unknown) => this.erreur.set(lireErreurApi(err).message),
+      error: (err: unknown) => this.erreurSecondaire(err),
     });
+  }
+
+  private erreurSecondaire(err: unknown): void {
+    if (!this.erreur()) {
+      this.erreur.set(messageErreurApi(err));
+    }
   }
 
   afficherFormulaire(): void {
@@ -116,15 +131,8 @@ export class Enrollments {
         this.nouvelleInscription.formationId = 0;
       },
       error: (err: unknown) => {
-        const resultat = lireErreurApi(err);
-
-        const messages: Record<string, string> = {
-          INSCRIPTION_EN_DOUBLE: 'This student is already enrolled in this training.',
-          FORMATION_COMPLETE: 'This training has reached its maximum capacity.',
-          FORMATION_NON_OUVERTE: 'This training is not open for enrollment.',
-        };
-
-        this.erreur.set((resultat.code && messages[resultat.code]) || resultat.message);
+        // INSCRIPTION_EN_DOUBLE, FORMATION_COMPLETE, FORMATION_NON_OUVERTE : textes centralisés.
+        this.erreur.set(messageErreurApi(err));
         this.saving.set(false);
       },
     });
@@ -148,6 +156,7 @@ export class Enrollments {
     this.inscriptionAAnnuler.set(null);
     this.erreur.set(null);
     this.succes.set(null);
+    this.annulationEnCours.set(true);
 
     this.inscriptionService.changerStatut(inscription.id, 'ANNULEE').subscribe({
       next: (miseAJour) => {
@@ -155,9 +164,11 @@ export class Enrollments {
           liste.map((item) => (item.id === miseAJour.id ? miseAJour : item)),
         );
         this.succes.set('Enrollment cancelled successfully!');
+        this.annulationEnCours.set(false);
       },
       error: (err: unknown) => {
-        this.erreur.set(lireErreurApi(err).message);
+        this.erreur.set(messageErreurApi(err));
+        this.annulationEnCours.set(false);
       },
     });
   }

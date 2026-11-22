@@ -2,11 +2,11 @@
   <h1>{{ modeEdition ? 'Edit training' : 'New training' }}</h1>
 
   @if (erreurServeur(); as message) {
-    <div class="alert" role="alert">{{ message }}</div>
+    <app-ui-alert [message]="message"></app-ui-alert>
   }
 
   @if (chargement()) {
-    <p class="state">Loading training…</p>
+    <app-ui-loading label="Loading training…"></app-ui-loading>
   } @else {
     <form [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
       <app-ui-form-field label="Title" controlId="intitule" [required]="true">

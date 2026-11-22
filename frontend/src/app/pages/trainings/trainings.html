@@ -5,12 +5,16 @@
   </header>
 
   @if (erreur(); as message) {
-    <div class="alert" role="alert">{{ message }}</div>
+    <app-ui-alert
+      [message]="message"
+      [retryable]="chargementEchoue()"
+      (retry)="charger()"
+    ></app-ui-alert>
   }
 
   @if (chargement()) {
-    <p class="state">Loading trainings…</p>
-  } @else {
+    <app-ui-loading label="Loading trainings…"></app-ui-loading>
+  } @else if (!chargementEchoue()) {
     <table class="table">
       <thead>
         <tr>
@@ -45,7 +49,12 @@
             <td class="actions">
               <a [routerLink]="['/trainings', formation.id]">View</a>
               <a [routerLink]="['/trainings', formation.id, 'edit']">Edit</a>
-              <button type="button" class="link-danger" (click)="demanderSuppression(formation)">
+              <button
+                type="button"
+                class="link-danger"
+                [disabled]="suppressionEnCours()"
+                (click)="demanderSuppression(formation)"
+              >
                 Delete
               </button>
             </td>
