@@ -134,4 +134,47 @@ describe('Students', () => {
     expect(element.querySelector('[role="alert"]')).not.toBeNull();
     expect(element.querySelector('.empty-state')).toBeNull();
   });
+
+  it('filtre par nom ou prénom sans tenir compte des accents ni de la casse', async () => {
+    const fixture = render();
+    http
+      .expectOne((req) => req.url.includes('/api/etudiants'))
+      .flush([
+        { id: 1, nom: 'Bénali', prenom: 'Yassine', email: 'y@b.ma', telephone: null },
+        { id: 2, nom: 'Haddad', prenom: 'Noûr', email: 'n@h.ma', telephone: null },
+      ]);
+    await fixture.whenStable();
+    const composant = fixture.componentInstance;
+
+    composant.rechercher('BENALI');
+    expect(composant.students().map((s) => s.id)).toEqual([1]);
+
+    composant.rechercher('  nour haddad ');
+    expect(composant.students().map((s) => s.id)).toEqual([2]);
+
+    composant.rechercher('');
+    expect(composant.students().length).toBe(2);
+  });
+
+  it('affiche les étudiants de la formation sélectionnée, puis revient à la liste complète', async () => {
+    const fixture = render();
+    http
+      .expectOne((req) => req.url.includes('/api/etudiants'))
+      .flush([{ id: 1, nom: 'Benali', prenom: 'Yassine', email: 'y@b.ma', telephone: null }]);
+    await fixture.whenStable();
+    const composant = fixture.componentInstance;
+
+    composant.changerFormation('3');
+    expect(composant.filterLoading()).toBe(true);
+    http
+      .expectOne('/api/formations/3/etudiants')
+      .flush([{ id: 7, nom: 'Tazi', prenom: 'Omar', email: 'o@t.ma', telephone: null }]);
+
+    expect(composant.filterLoading()).toBe(false);
+    expect(composant.students().map((s) => s.id)).toEqual([7]);
+
+    composant.changerFormation('');
+    expect(composant.selectedFormationId()).toBeNull();
+    expect(composant.students().map((s) => s.id)).toEqual([1]);
+  });
 });

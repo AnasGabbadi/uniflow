@@ -1,4 +1,4 @@
-# Tests du back-end (IP-48)
+# Stratégie de test (back-end et front-end)
 
 Ce document décrit la stratégie de test de l'API UniFlow, la base de données utilisée pendant les tests et la façon de les lancer.
 
@@ -151,3 +151,68 @@ Avec Testcontainers, le job `backend` de [`.github/workflows/ci.yml`](../.github
 - les variables et secrets GitHub `DB_NAME`, `DB_USERNAME` et `DB_PASSWORD`, s'ils ne servent nulle part ailleurs (à vérifier avant de les supprimer, par exemple pour un futur déploiement).
 
 L'étape `./mvnw -B verify` reste inchangée. Gains attendus : un job plus simple, pas de secret de base nécessaire pour les tests, et un comportement identique en local et en CI.
+
+## 8. Front-end (IP-46)
+
+Les tests du front-end Angular sont des tests **unitaires et de composants**, exécutés par **Vitest** via le builder `@angular/build:unit-test`, dans un DOM simulé (`jsdom`). Ils ne nécessitent ni navigateur, ni API, ni Docker.
+
+### Ce qui est testé
+
+| Zone | Outils | Ce qui est vérifié |
+|---|---|---|
+| Services (`src/app/services`) | `provideHttpClient()`, `provideHttpClientTesting()`, `HttpTestingController` | URL, verbe HTTP, paramètres et corps de chaque appel à l'API, avec des réponses simulées. Par exemple, `POST /api/inscriptions` avec `{ etudiantId, formationId }` (contrat §5). |
+| Intercepteurs | `withInterceptors([...])` + `HttpTestingController` | Indicateur de chargement global (succès, erreur, panne réseau, annulation) et passage direct du mock désactivé |
+| Traduction des erreurs | fonctions pures | Code de l'API, puis `detail`, puis statut HTTP (0, 502, 503 et 504 = serveur injoignable) |
+| Composants partagés | `TestBed`, `componentRef.setInput()` | Rendu, accessibilité (`role`, `aria-*`) et événements émis |
+| Formulaires étudiant et formation | Reactive Forms | Champs obligatoires, longueurs maximales, e-mail, téléphone, date de naissance passée, durée et capacité entières > 0, date de fin ≥ date de début, erreurs serveur par champ, données envoyées |
+| Pages | `TestBed` + `HttpTestingController` + `provideRouter` | Chargement, états vides, erreurs 400, 404, 409, 500 et 502, Retry, double clic bloqué, navigation |
+| Routes | `RouterTestingHarness` | Chaque URL affiche le bon composant, et les URL inconnues redirigent vers `/students` |
+
+Chaque test configure son propre `TestBed`, vérifie avec `http.verify()` qu'aucune requête n'est restée sans réponse, et ne dépend ni de l'ordre d'exécution ni du mode mock (`useMock`).
+
+### Commandes
+
+Depuis `frontend/` :
+
+```bash
+npm test                         # mode « watch » : relance les tests à chaque modification
+npm test -- --watch=false        # une seule exécution (commande utilisée par la CI)
+npm run test:coverage            # une exécution + rapport de couverture dans frontend/coverage/
+```
+
+Rapport HTML : `frontend/coverage/uniflow-frontend/index.html`. Le dossier `coverage/` est ignoré par Git.
+
+Vérification complète avant une Pull Request :
+
+```bash
+npm run lint && npm run format:check && npm test -- --watch=false && npm run build
+```
+
+### Résultat de référence (2026-11-22)
+
+```text
+ Test Files  24 passed (24)
+      Tests  165 passed (165)
+   Duration  3.58s
+```
+
+Couverture (`npm run test:coverage`) :
+
+| Dossier | Instructions | Branches | Fonctions | Lignes |
+|---|---|---|---|---|
+| `services` | 100,0 % | 97,7 % | 100,0 % | 100,0 % |
+| `interceptors` | 32,5 % | 6,7 % | 30,0 % | 33,3 % |
+| `components` | 100,0 % | 100,0 % | 100,0 % | 100,0 % |
+| `pages` | 85,1 % | 83,1 % | 74,8 % | 89,6 % |
+| **Total** | **86,5 %** | **84,0 %** | **77,5 %** | **89,4 %** |
+
+Pour `interceptors`, `loading.interceptor.ts` est couvert à 100 %. Le faible pourcentage vient de `mock-api.interceptor.ts`, le simulateur d'API de développement, dont seul le passage direct est testé : ses réponses simulées ne font pas partie du comportement livré.
+
+### Problèmes fréquents
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| `Code coverage requires "@vitest/coverage-v8"` | Dépendances non installées | `npm ci` dans `frontend/` |
+| `Expected no open requests, found 1` | Un test déclenche une requête HTTP sans y répondre | Ajouter `http.expectOne(...).flush(...)` pour cette requête |
+| `Expected one matching request ..., found none` | L'URL ou les paramètres ne correspondent pas | Utiliser un prédicat `(req) => req.url === '/api/...'` et vérifier `req.params` séparément |
+| Le mode watch ne se ferme pas en CI | `npm test` seul reste en mode watch | Toujours passer `-- --watch=false` en CI |

@@ -165,4 +165,111 @@ describe('TrainingForm', () => {
       requete.flush({ ...requete.request.body, id: 3, placesRestantes: 28 });
     });
   });
+
+  describe('validation', () => {
+    let composant: TrainingForm;
+
+    function toucher(champ: keyof TrainingForm['form']['controls']): void {
+      composant.form.controls[champ].markAsTouched();
+    }
+
+    beforeEach(() => {
+      composant = creerComposant(null);
+      remplir(composant);
+    });
+
+    it('est valide avec des données correctes et le statut OUVERTE par défaut', () => {
+      // Contrôle nonNullable : sa valeur initiale (avant remplir) est conservée dans defaultValue.
+      expect(composant.form.controls.statut.defaultValue).toBe('OUVERTE');
+      expect(composant.form.valid).toBe(true);
+    });
+
+    it.each(['intitule', 'dateDebut', 'dateFin'] as const)(
+      'rend le champ %s obligatoire',
+      (champ) => {
+        composant.form.controls[champ].setValue('');
+        toucher(champ);
+
+        expect(composant.form.invalid).toBe(true);
+        expect(composant.messageErreur(champ)).toBe('This field is required.');
+      },
+    );
+
+    it.each(['duree', 'capaciteMax'] as const)('rend le champ %s obligatoire', (champ) => {
+      composant.form.controls[champ].setValue(null);
+      toucher(champ);
+
+      expect(composant.messageErreur(champ)).toBe('This field is required.');
+    });
+
+    it("limite l'intitulé à 150 caractères", () => {
+      composant.form.controls.intitule.setValue('a'.repeat(150));
+      expect(composant.form.controls.intitule.valid).toBe(true);
+
+      composant.form.controls.intitule.setValue('a'.repeat(151));
+      toucher('intitule');
+      expect(composant.messageErreur('intitule')).toBe('Maximum 150 characters.');
+    });
+
+    it('limite la description à 5000 caractères', () => {
+      composant.form.controls.description.setValue('a'.repeat(5001));
+      toucher('description');
+
+      expect(composant.messageErreur('description')).toBe('Maximum 5000 characters.');
+    });
+
+    it.each([
+      [0, 'Must be greater than 0.'],
+      [-3, 'Must be a whole number.'],
+      [12.5, 'Must be a whole number.'],
+    ])('refuse une capacité de %s', (valeur, message) => {
+      composant.form.controls.capaciteMax.setValue(valeur);
+      toucher('capaciteMax');
+
+      expect(composant.form.controls.capaciteMax.invalid).toBe(true);
+      expect(composant.messageErreur('capaciteMax')).toBe(message);
+    });
+
+    it('refuse une durée négative', () => {
+      composant.form.controls.duree.setValue(-1);
+      toucher('duree');
+
+      expect(composant.form.controls.duree.invalid).toBe(true);
+    });
+
+    it('accepte une date de fin égale à la date de début', () => {
+      composant.form.controls.dateFin.setValue('2026-12-01');
+
+      expect(composant.form.hasError('periode')).toBe(false);
+      expect(composant.form.valid).toBe(true);
+    });
+
+    it("n'affiche le message de période que sous la date de fin touchée", () => {
+      composant.form.controls.dateFin.setValue('2026-11-01');
+
+      expect(composant.messageErreur('dateFin')).toBeNull();
+      toucher('dateFin');
+      expect(composant.messageErreur('dateFin')).toBe('End date cannot be before start date.');
+      expect(composant.messageErreur('dateDebut')).toBeNull();
+    });
+
+    it("n'appelle pas l'API si la période est invalide", () => {
+      composant.form.controls.dateFin.setValue('2026-11-01');
+      composant.enregistrer();
+
+      TestBed.inject(HttpTestingController).expectNone('/api/formations');
+      expect(composant.form.controls.intitule.touched).toBe(true);
+    });
+
+    it('envoie une description non vide nettoyée et le statut choisi', () => {
+      composant.form.controls.description.setValue('  Docker et Kubernetes  ');
+      composant.form.controls.statut.setValue('FERMEE');
+      composant.enregistrer();
+
+      const requete = TestBed.inject(HttpTestingController).expectOne('/api/formations');
+      expect(requete.request.body.description).toBe('Docker et Kubernetes');
+      expect(requete.request.body.statut).toBe('FERMEE');
+      requete.flush({ ...requete.request.body, id: 8, placesRestantes: 25 });
+    });
+  });
 });
