@@ -9,12 +9,15 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { UiAlert } from '../../../components/shared/ui-alert/ui-alert';
 import { UiFormField } from '../../../components/shared/ui-form-field/ui-form-field';
+import { UiLoading } from '../../../components/shared/ui-loading/ui-loading';
 import {
   FormationRequest,
   LIBELLES_STATUT_FORMATION,
   StatutFormation,
 } from '../../../models/formation.model';
+import { messageErreurApi } from '../../../services/api-error-messages';
 import { lireErreurApi } from '../../../services/api-error.util';
 import { FormationService } from '../../../services/formation.service';
 
@@ -32,7 +35,7 @@ const NOMBRE_ENTIER = /^\d+$/;
 
 @Component({
   selector: 'app-training-form',
-  imports: [ReactiveFormsModule, RouterLink, UiFormField],
+  imports: [ReactiveFormsModule, RouterLink, UiFormField, UiAlert, UiLoading],
   templateUrl: './training-form.html',
   styleUrl: './training-form.scss',
 })
@@ -162,14 +165,14 @@ export class TrainingForm {
       },
       error: (erreur: unknown) => {
         this.chargement.set(false);
-        this.erreurServeur.set(lireErreurApi(erreur).message);
+        this.erreurServeur.set(messageErreurApi(erreur));
       },
     });
   }
 
   private afficherErreurServeur(erreur: unknown): void {
     const lue = lireErreurApi(erreur);
-    this.erreurServeur.set(lue.message);
+    this.erreurServeur.set(messageErreurApi(erreur));
     for (const [champApi, message] of Object.entries(lue.champs)) {
       const nom = CHAMPS_API[champApi] ?? champApi;
       const controle = this.form.get(nom);

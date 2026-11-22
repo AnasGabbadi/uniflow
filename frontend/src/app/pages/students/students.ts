@@ -2,15 +2,18 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
+import { UiAlert } from '../../components/shared/ui-alert/ui-alert';
+import { UiLoading } from '../../components/shared/ui-loading/ui-loading';
 import { Etudiant } from '../../models/etudiant.model';
 import { Formation } from '../../models/formation.model';
+import { messageErreurApi } from '../../services/api-error-messages';
 import { EtudiantService } from '../../services/etudiant.service';
 import { FormationService } from '../../services/formation.service';
 
 @Component({
   selector: 'app-students',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, UiAlert, UiLoading],
   templateUrl: './students.html',
   styleUrl: './students.scss',
 })
@@ -30,6 +33,13 @@ export class Students implements OnInit {
   readonly filterLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly success = signal<string | null>(null);
+
+  /** Échec du chargement de la liste des étudiants. */
+  readonly chargementEchoue = signal(false);
+  /** Échec du chargement des étudiants de la formation sélectionnée. */
+  readonly filtreEchoue = signal(false);
+  /** En cas d'échec, ni tableau ni état vide : seulement l'alerte + Retry. */
+  readonly echecChargement = computed(() => this.chargementEchoue() || this.filtreEchoue());
 
   readonly students = computed(() => {
     const source =
@@ -57,25 +67,37 @@ export class Students implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.chargementEchoue.set(false);
 
     this.etudiantService
       .lister()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (liste) => this.allStudents.set(liste),
-        error: (err) => {
-          console.error('[Students] load failed', err);
-          this.error.set('Impossible de charger la liste des étudiants.');
+        error: (err: unknown) => {
+          this.error.set(messageErreurApi(err));
+          this.chargementEchoue.set(true);
         },
       });
 
     this.formationService.lister().subscribe({
       next: (liste) => this.formations.set(liste),
-      error: (err) => {
-        console.error('[Students] formations load failed', err);
-        this.error.set('Impossible de charger la liste des formations.');
+      // N'écrase pas l'erreur du chargement principal (liste des étudiants).
+      error: (err: unknown) => {
+        if (!this.error()) {
+          this.error.set(messageErreurApi(err));
+        }
       },
     });
+  }
+
+  /** Bouton « Retry » : recharge les listes, puis le filtre par formation s'il est actif. */
+  reessayer(): void {
+    this.load();
+    const formationId = this.selectedFormationId();
+    if (formationId !== null) {
+      this.changerFormation(String(formationId));
+    }
   }
 
   rechercher(terme: string): void {
@@ -86,6 +108,7 @@ export class Students implements OnInit {
     const formationId = valeur ? Number(valeur) : null;
 
     this.error.set(null);
+    this.filtreEchoue.set(false);
     this.selectedFormationId.set(formationId);
 
     if (formationId === null) {
@@ -106,11 +129,10 @@ export class Students implements OnInit {
             this.formationStudents.set(liste);
           }
         },
-        error: (err) => {
-          console.error('[Students] formation filter failed', err);
-
+        error: (err: unknown) => {
           if (this.selectedFormationId() === formationId) {
-            this.error.set('Impossible de charger les étudiants de cette formation.');
+            this.error.set(messageErreurApi(err));
+            this.filtreEchoue.set(true);
           }
         },
       });

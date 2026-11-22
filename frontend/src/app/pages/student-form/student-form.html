@@ -2,11 +2,11 @@
   <h1>{{ modeEdition ? 'Modifier un étudiant' : 'Ajouter un étudiant' }}</h1>
 
   @if (erreurServeur(); as message) {
-    <div class="alert" role="alert">{{ message }}</div>
+    <app-ui-alert [message]="message"></app-ui-alert>
   }
 
   @if (chargement()) {
-    <p>Chargement de l'étudiant...</p>
+    <app-ui-loading label="Loading student…"></app-ui-loading>
   } @else {
     <form [formGroup]="form" (ngSubmit)="enregistrer()" novalidate>
       <app-ui-form-field label="Nom" controlId="nom" [required]="true">
