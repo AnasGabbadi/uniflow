@@ -219,6 +219,16 @@ class EtudiantServiceTest {
         verify(repository, never()).save(any());
     }
 
+    @Test
+    void creerIndiqueLEmailEnConflitDansLeMessage() {
+        when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(true);
+
+        ConflitMetierException exception = assertThrows(ConflitMetierException.class, () -> service.creer(requete()));
+
+        assertEquals("L'email 'sara.elamrani@example.ma' est déjà utilisé par un autre étudiant.", exception.getMessage());
+    }
+    
+
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
         Etudiant e = new Etudiant();
