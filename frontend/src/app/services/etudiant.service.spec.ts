@@ -66,4 +66,34 @@ describe('EtudiantService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null, { status: 204, statusText: 'No Content' });
   });
+
+  it("liste tous les étudiants sans paramètre quand aucune recherche n'est donnée", () => {
+    service.lister().subscribe();
+
+    const req = http.expectOne('/api/etudiants');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.keys()).toEqual([]);
+    req.flush([sara]);
+  });
+
+  it('lit un étudiant avec GET /api/etudiants/{id}', () => {
+    let resultat: Etudiant | undefined;
+    service.obtenir(1).subscribe((e) => (resultat = e));
+
+    const req = http.expectOne('/api/etudiants/1');
+    expect(req.request.method).toBe('GET');
+    req.flush(sara);
+
+    expect(resultat?.email).toBe('sara.elamrani@example.ma');
+  });
+
+  it('modifie un étudiant avec PUT /api/etudiants/{id}', () => {
+    const { id, ...requete } = sara;
+    service.modifier(id, { ...requete, telephone: '0612345678' }).subscribe();
+
+    const req = http.expectOne('/api/etudiants/1');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ ...requete, telephone: '0612345678' });
+    req.flush({ ...sara, telephone: '0612345678' });
+  });
 });

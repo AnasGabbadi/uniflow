@@ -192,4 +192,123 @@ describe('StudentForm', () => {
       expect(composant.enCours()).toBe(false);
     });
   });
+
+  describe('validation', () => {
+    let composant: StudentForm;
+
+    /** Date du jour au format AAAA-MM-JJ (heure locale, comme le validateur du formulaire). */
+    function aujourdhui(): string {
+      const d = new Date();
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0'),
+      ].join('-');
+    }
+
+    function saisir(champ: keyof StudentForm['form']['controls'], valeur: string): void {
+      const controle = composant.form.controls[champ];
+      controle.setValue(valeur);
+      controle.markAsTouched();
+    }
+
+    beforeEach(() => {
+      composant = creerComposant(null);
+      remplir(composant);
+    });
+
+    it("n'affiche aucun message tant que le champ n'a pas été touché", () => {
+      composant.form.controls.nom.setValue('');
+
+      expect(composant.form.controls.nom.invalid).toBe(true);
+      expect(composant.messageErreur('nom')).toBeNull();
+    });
+
+    it.each(['nom', 'prenom', 'email'] as const)('rend le champ %s obligatoire', (champ) => {
+      saisir(champ, '');
+
+      expect(composant.form.invalid).toBe(true);
+      expect(composant.messageErreur(champ)).toBe('This field is required.');
+    });
+
+    it('accepte un formulaire avec seulement les champs obligatoires', () => {
+      saisir('telephone', '');
+      saisir('adresse', '');
+      saisir('dateNaissance', '');
+
+      expect(composant.form.valid).toBe(true);
+    });
+
+    it.each([
+      ['nom', 100],
+      ['prenom', 100],
+      ['adresse', 255],
+      ['telephone', 30],
+    ] as const)('limite %s à %i caractères', (champ, max) => {
+      const valeur = champ === 'telephone' ? '1'.repeat(max) : 'a'.repeat(max);
+      saisir(champ, valeur);
+      expect(composant.form.controls[champ].valid).toBe(true);
+
+      saisir(champ, valeur + (champ === 'telephone' ? '1' : 'a'));
+      expect(composant.messageErreur(champ)).toBe(`Maximum ${max} characters.`);
+    });
+
+    it("limite l'e-mail à 255 caractères", () => {
+      const domaine = '@example.com';
+      saisir('email', 'a'.repeat(256 - domaine.length) + domaine);
+
+      expect(composant.form.controls.email.hasError('maxlength')).toBe(true);
+    });
+
+    it.each(['0612345678', '+212 6 12 34 56 78', '06-12-34-56-78'])(
+      'accepte le numéro de téléphone « %s »',
+      (numero) => {
+        saisir('telephone', numero);
+
+        expect(composant.form.controls.telephone.valid).toBe(true);
+      },
+    );
+
+    it.each(['06.12.34.56.78', '06-abc', '(06) 12 34'])(
+      'refuse le numéro de téléphone « %s »',
+      (numero) => {
+        saisir('telephone', numero);
+
+        expect(composant.messageErreur('telephone')).toBe('Invalid phone number.');
+      },
+    );
+
+    it("refuse une date de naissance égale à aujourd'hui", () => {
+      saisir('dateNaissance', aujourdhui());
+
+      expect(composant.messageErreur('dateNaissance')).toBe('Date of birth must be in the past.');
+    });
+
+    it('accepte une date de naissance passée', () => {
+      saisir('dateNaissance', '2001-06-30');
+
+      expect(composant.form.controls.dateNaissance.valid).toBe(true);
+    });
+
+    it("affiche en priorité l'erreur du serveur sur un champ", () => {
+      const controle = composant.form.controls.email;
+      controle.setErrors({ required: true, serveur: 'Adresse déjà utilisée.' });
+      controle.markAsTouched();
+
+      expect(composant.messageErreur('email')).toBe('Adresse déjà utilisée.');
+    });
+
+    it('envoie null pour les champs facultatifs vides', () => {
+      saisir('telephone', '   ');
+      saisir('adresse', '');
+      saisir('dateNaissance', '');
+      composant.enregistrer();
+
+      const requete = TestBed.inject(HttpTestingController).expectOne('/api/etudiants');
+      expect(requete.request.body).toEqual(
+        expect.objectContaining({ telephone: null, adresse: null, dateNaissance: null }),
+      );
+      requete.flush({ id: 1, ...requete.request.body });
+    });
+  });
 });
