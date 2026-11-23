@@ -10,9 +10,9 @@ import jakarta.validation.constraints.NotNull;
 public record InscriptionRequest(
 
         @NotNull(message = "L'identifiant de l'étudiant est obligatoire")
-        Integer idEtudiant,
+        Integer etudiantId,
 
         @NotNull(message = "L'identifiant de la formation est obligatoire")
-        Integer idFormation
+        Integer formationId
 ) {
 }
