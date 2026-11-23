@@ -45,11 +45,11 @@ public class InscriptionService {
      */
     @Transactional
     public InscriptionResponse creer(InscriptionRequest request) {
-        Etudiant etudiant = etudiantRepository.findById(request.idEtudiant())
-                .orElseThrow(() -> new RessourceIntrouvableException("étudiant", request.idEtudiant()));
+        Etudiant etudiant = etudiantRepository.findById(request.etudiantId())
+                .orElseThrow(() -> new RessourceIntrouvableException("étudiant", request.etudiantId()));
 
-        Formation formation = formationRepository.findById(request.idFormation())
-                .orElseThrow(() -> new RessourceIntrouvableException("formation", request.idFormation()));
+        Formation formation = formationRepository.findById(request.formationId())
+                .orElseThrow(() -> new RessourceIntrouvableException("formation", request.formationId()));
 
         if (inscriptionRepository.existsByEtudiant_IdAndFormation_Id(etudiant.getId(), formation.getId())) {
             throw new ConflitMetierException(CodeErreur.INSCRIPTION_EN_DOUBLE,

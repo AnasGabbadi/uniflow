@@ -59,7 +59,7 @@ class InscriptionControllerTest {
 
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"idEtudiant\": 1, \"idFormation\": 3}"))
+                        .content("{\"etudiantId\": 1, \"formationId\": 3}"))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/inscriptions/7")))
                 .andExpect(jsonPath("$.id").value(7))
@@ -80,7 +80,7 @@ class InscriptionControllerTest {
     void inscrire_DoitRetourner400SiLIdentifiantDeLEtudiantEstAbsent() throws Exception {
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"idFormation\": 3}"))
+                        .content("{\"formationId\": 3}"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(inscriptionService);
@@ -90,7 +90,7 @@ class InscriptionControllerTest {
     void inscrire_DoitRetourner400SiLIdentifiantDeLaFormationEstAbsent() throws Exception {
         mockMvc.perform(post(URL)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"idEtudiant\": 1}"))
+                        .content("{\"etudiantId\": 1}"))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(inscriptionService);
@@ -113,5 +113,16 @@ class InscriptionControllerTest {
                 new FormationResume(3, "Java avancé"),
                 LocalDate.of(2026, 11, 19),
                 "EN_ATTENTE");
+    }
+
+    @Test
+    void inscrire_DoitRetourner400AvecLesAnciensNomsDeChamps() throws Exception {
+        // Régression : le contrat d'API impose etudiantId / formationId (et non idEtudiant / idFormation)
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"idEtudiant\": 1, \"idFormation\": 3}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(inscriptionService);
     }
 }

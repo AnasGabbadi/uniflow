@@ -97,9 +97,10 @@ class InscriptionFlowIntegrationTest {
         return JsonPath.read(reponse, "$.id");
     }
 
-    private static String inscriptionJson(int idEtudiant, int idFormation) {
+    // Noms de champs conformes au contrat d'API (docs/api-contract.md, §5)
+    private static String inscriptionJson(int etudiantId, int formationId) {
         return """
-                {"idEtudiant":%d,"idFormation":%d}
-                """.formatted(idEtudiant, idFormation);
+                {"etudiantId":%d,"formationId":%d}
+                """.formatted(etudiantId, formationId);
     }
 }
