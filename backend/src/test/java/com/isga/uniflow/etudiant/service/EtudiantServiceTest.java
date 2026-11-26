@@ -219,16 +219,29 @@ class EtudiantServiceTest {
         verify(repository, never()).save(any());
     }
 
+
+    // ---------- Suppression (IP-37) ----------
+
     @Test
-    void creerIndiqueLEmailEnConflitDansLeMessage() {
-        when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(true);
+    void supprimerSupprimeLEtudiantExistant() {
+        Etudiant existant = unEtudiant(7, "El Amrani", "Sara", "sara@example.ma");
+        when(repository.findById(7)).thenReturn(Optional.of(existant));
 
-        ConflitMetierException exception = assertThrows(ConflitMetierException.class, () -> service.creer(requete()));
+        service.supprimer(7);
 
-        assertEquals("L'email 'sara.elamrani@example.ma' est déjà utilisé par un autre étudiant.", exception.getMessage());
+        verify(repository).delete(existant);
     }
-    
 
+    @Test
+    void supprimerLeve404SiIdentifiantInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        RessourceIntrouvableException exception = assertThrows(RessourceIntrouvableException.class,
+                () -> service.supprimer(99));
+
+        assertEquals("Aucun étudiant avec l'identifiant 99.", exception.getMessage());
+        verify(repository, never()).delete(any(Etudiant.class));
+    }
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
         Etudiant e = new Etudiant();
