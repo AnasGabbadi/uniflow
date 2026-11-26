@@ -28,7 +28,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 @ExtendWith(MockitoExtension.class)
 class EtudiantServiceTest {
 
@@ -50,7 +49,7 @@ class EtudiantServiceTest {
         when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(false);
         when(repository.save(any(Etudiant.class))).thenAnswer(inv -> {
             Etudiant e = inv.getArgument(0);
-            ReflectionTestUtils.setField(e, "id", 7);   
+            ReflectionTestUtils.setField(e, "id", 7);
             return e;
         });
 
@@ -60,9 +59,9 @@ class EtudiantServiceTest {
         verify(repository).save(captor.capture());
         Etudiant saved = captor.getValue();
 
-        assertEquals("El Amrani", saved.getNom());                       
-        assertEquals("Sara", saved.getPrenom());                         
-        assertEquals("sara.elamrani@example.ma", saved.getEmail());      
+        assertEquals("El Amrani", saved.getNom());
+        assertEquals("Sara", saved.getPrenom());
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());
         assertEquals("+212 6 12 34 56 78", saved.getTelephone());
         assertEquals("12 rue des Écoles, Casablanca", saved.getAdresse());
         assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
@@ -155,7 +154,7 @@ class EtudiantServiceTest {
         when(repository.rechercherParNom("ali", tri))
                 .thenReturn(List.of(unEtudiant(3, "Alibi", "Omar", "omar@example.ma")));
 
-        List<EtudiantResponse> reponses = service.lister("  ali ");   
+        List<EtudiantResponse> reponses = service.lister("  ali ");
 
         assertEquals(1, reponses.size());
         assertEquals("Alibi", reponses.get(0).nom());
@@ -183,7 +182,7 @@ class EtudiantServiceTest {
         assertEquals(0, service.lister("zzz").size());
     }
 
-    // ---------- Modification  ----------
+    // ---------- Modification ----------
 
     @Test
     void modifierMetAJourLEtudiantAvecLesDonneesNettoyees() {
@@ -198,10 +197,10 @@ class EtudiantServiceTest {
         verify(repository).save(captor.capture());
         Etudiant saved = captor.getValue();
 
-        assertEquals(7, saved.getId());                                  
-        assertEquals("El Amrani", saved.getNom());                       
-        assertEquals("Sara", saved.getPrenom());                         
-        assertEquals("sara.elamrani@example.ma", saved.getEmail());      
+        assertEquals(7, saved.getId());
+        assertEquals("El Amrani", saved.getNom());
+        assertEquals("Sara", saved.getPrenom());
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());
         assertEquals("+212 6 12 34 56 78", saved.getTelephone());
         assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
 
@@ -230,7 +229,6 @@ class EtudiantServiceTest {
         assertEquals(CodeErreur.EMAIL_DEJA_UTILISE, exception.getCode());
         verify(repository, never()).save(any());
     }
-
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
         Etudiant e = new Etudiant();

@@ -14,10 +14,8 @@ public interface EtudiantRepository extends JpaRepository<Etudiant, Integer> {
 
     boolean existsByEmailIgnoreCaseAndIdNot(String email, Integer id);
 
-    /**
-     * IP-39 : recherche partielle, insensible à la casse, sur le nom, le prénom
-     * ou le nom complet (« prénom nom » ou « nom prénom »).
-     */
+    
+    
     @Query("""
             SELECT e FROM Etudiant e
             WHERE LOWER(e.nom) LIKE LOWER(CONCAT('%', :terme, '%'))
