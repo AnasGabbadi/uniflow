@@ -146,13 +146,13 @@ class EtudiantServiceTest {
 
         assertEquals(1, reponses.size());
         verify(repository, never())
-                .findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(any(), any(), any());
+                .rechercherParNom(any(), any());
     }
 
     @Test
     void listerAvecRechercheCherchePartiellementSurNomOuPrenom() {
         Sort tri = Sort.by("nom", "prenom");
-        when(repository.findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase("ali", "ali", tri))
+        when(repository.rechercherParNom("ali", tri))
                 .thenReturn(List.of(unEtudiant(3, "Alibi", "Omar", "omar@example.ma")));
 
         List<EtudiantResponse> reponses = service.lister("  ali ");   
@@ -163,9 +163,21 @@ class EtudiantServiceTest {
     }
 
     @Test
+    void listerRechercheLeNomCompletEnNormalisantLesEspaces() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.rechercherParNom("Sara El Amrani", tri))
+                .thenReturn(List.of(unEtudiant(1, "El Amrani", "Sara", "sara@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister("  Sara   El Amrani ");
+
+        assertEquals(1, reponses.size());
+        assertEquals("El Amrani", reponses.get(0).nom());
+    }
+
+    @Test
     void listerRenvoieUneListeVideSiAucunResultat() {
         Sort tri = Sort.by("nom", "prenom");
-        when(repository.findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase("zzz", "zzz", tri))
+        when(repository.rechercherParNom("zzz", tri))
                 .thenReturn(List.of());
 
         assertEquals(0, service.lister("zzz").size());
@@ -219,29 +231,6 @@ class EtudiantServiceTest {
         verify(repository, never()).save(any());
     }
 
-
-    // ---------- Suppression (IP-37) ----------
-
-    @Test
-    void supprimerSupprimeLEtudiantExistant() {
-        Etudiant existant = unEtudiant(7, "El Amrani", "Sara", "sara@example.ma");
-        when(repository.findById(7)).thenReturn(Optional.of(existant));
-
-        service.supprimer(7);
-
-        verify(repository).delete(existant);
-    }
-
-    @Test
-    void supprimerLeve404SiIdentifiantInconnu() {
-        when(repository.findById(99)).thenReturn(Optional.empty());
-
-        RessourceIntrouvableException exception = assertThrows(RessourceIntrouvableException.class,
-                () -> service.supprimer(99));
-
-        assertEquals("Aucun étudiant avec l'identifiant 99.", exception.getMessage());
-        verify(repository, never()).delete(any(Etudiant.class));
-    }
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
         Etudiant e = new Etudiant();

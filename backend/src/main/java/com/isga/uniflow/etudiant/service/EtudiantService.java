@@ -54,9 +54,8 @@ public class EtudiantService {
         if (recherche == null || recherche.isBlank()) {
             etudiants = etudiantRepository.findAll(TRI_NOM_PRENOM);
         } else {
-            String terme = recherche.trim();
-            etudiants = etudiantRepository
-                    .findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(terme, terme, TRI_NOM_PRENOM);
+            String terme = recherche.trim().replaceAll("\\s+", " ");   // espaces multiples -> un seul
+            etudiants = etudiantRepository.rechercherParNom(terme, TRI_NOM_PRENOM);
         }
 
         return etudiants.stream().map(EtudiantResponse::from).toList();
@@ -76,17 +75,6 @@ public class EtudiantService {
         return EtudiantResponse.from(etudiantRepository.save(etudiant));
     }
 
-
-    /**
-     * IP-37 : supprime un étudiant. Ses inscriptions sont supprimées en cascade par la base
-     * (ON DELETE CASCADE, voir V1__init.sql).
-     *
-     * @throws RessourceIntrouvableException si l'identifiant est inconnu (HTTP 404)
-     */
-    @Transactional
-    public void supprimer(Integer id) {
-        etudiantRepository.delete(chercher(id));
-    }
 
     private Etudiant chercher(Integer id) {
         return etudiantRepository.findById(id)
