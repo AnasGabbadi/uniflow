@@ -5,6 +5,7 @@ import com.isga.uniflow.etudiant.dto.EtudiantResponse;
 import com.isga.uniflow.etudiant.service.EtudiantService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,5 +57,11 @@ public class EtudiantController {
     public ResponseEntity<EtudiantResponse> modifier(@PathVariable Integer id,
                                                      @Valid @RequestBody EtudiantRequest request) {
         return ResponseEntity.ok(etudiantService.modifier(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> supprimer(@PathVariable Integer id) {
+        etudiantService.supprimer(id);
+        return ResponseEntity.noContent().build();
     }
 }

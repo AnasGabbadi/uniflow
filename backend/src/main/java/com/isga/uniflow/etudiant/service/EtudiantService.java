@@ -77,6 +77,17 @@ public class EtudiantService {
     }
 
 
+    /**
+     * IP-37 : supprime un étudiant. Ses inscriptions sont supprimées en cascade par la base
+     * (ON DELETE CASCADE, voir V1__init.sql).
+     *
+     * @throws RessourceIntrouvableException si l'identifiant est inconnu (HTTP 404)
+     */
+    @Transactional
+    public void supprimer(Integer id) {
+        etudiantRepository.delete(chercher(id));
+    }
+
     private Etudiant chercher(Integer id) {
         return etudiantRepository.findById(id)
                 .orElseThrow(() -> new RessourceIntrouvableException("étudiant", id));

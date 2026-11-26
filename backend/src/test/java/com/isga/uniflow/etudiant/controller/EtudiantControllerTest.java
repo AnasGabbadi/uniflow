@@ -22,9 +22,11 @@ import java.util.List;
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -247,6 +249,38 @@ class EtudiantControllerTest {
         mockMvc.perform(put(URL + "/42").contentType(MediaType.APPLICATION_JSON).content(corpsValide()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("EMAIL_DEJA_UTILISE"));
+    }
+
+    // ============================================================
+    // DELETE /api/etudiants/{id}
+    // ============================================================
+
+    @Test
+    void supprimer_DoitRetourner204SansContenu() throws Exception {
+        mockMvc.perform(delete(URL + "/42"))
+                .andExpect(status().isNoContent());
+
+        verify(etudiantService).supprimer(42);
+    }
+
+    @Test
+    void supprimer_DoitRetourner404SiIdentifiantInconnu() throws Exception {
+        doThrow(new RessourceIntrouvableException("étudiant", 99)).when(etudiantService).supprimer(99);
+
+        mockMvc.perform(delete(URL + "/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"))
+                .andExpect(jsonPath("$.detail").value("Aucun étudiant avec l'identifiant 99."));
+    }
+
+    @Test
+    void supprimer_DoitRetourner400SiIdentifiantNonNumerique() throws Exception {
+        mockMvc.perform(delete(URL + "/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("REQUETE_INVALIDE"));
+
+        verifyNoInteractions(etudiantService);
     }
 
     // ---------- Données de test ----------
