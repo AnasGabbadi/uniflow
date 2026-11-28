@@ -28,7 +28,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 @ExtendWith(MockitoExtension.class)
 class EtudiantServiceTest {
 
@@ -50,7 +49,7 @@ class EtudiantServiceTest {
         when(repository.existsByEmailIgnoreCase("sara.elamrani@example.ma")).thenReturn(false);
         when(repository.save(any(Etudiant.class))).thenAnswer(inv -> {
             Etudiant e = inv.getArgument(0);
-            ReflectionTestUtils.setField(e, "id", 7);   
+            ReflectionTestUtils.setField(e, "id", 7);
             return e;
         });
 
@@ -60,9 +59,9 @@ class EtudiantServiceTest {
         verify(repository).save(captor.capture());
         Etudiant saved = captor.getValue();
 
-        assertEquals("El Amrani", saved.getNom());                       
-        assertEquals("Sara", saved.getPrenom());                         
-        assertEquals("sara.elamrani@example.ma", saved.getEmail());      
+        assertEquals("El Amrani", saved.getNom());
+        assertEquals("Sara", saved.getPrenom());
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());
         assertEquals("+212 6 12 34 56 78", saved.getTelephone());
         assertEquals("12 rue des Écoles, Casablanca", saved.getAdresse());
         assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
@@ -146,16 +145,16 @@ class EtudiantServiceTest {
 
         assertEquals(1, reponses.size());
         verify(repository, never())
-                .findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(any(), any(), any());
+                .rechercherParNom(any(), any());
     }
 
     @Test
     void listerAvecRechercheCherchePartiellementSurNomOuPrenom() {
         Sort tri = Sort.by("nom", "prenom");
-        when(repository.findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase("ali", "ali", tri))
+        when(repository.rechercherParNom("ali", tri))
                 .thenReturn(List.of(unEtudiant(3, "Alibi", "Omar", "omar@example.ma")));
 
-        List<EtudiantResponse> reponses = service.lister("  ali ");   
+        List<EtudiantResponse> reponses = service.lister("  ali ");
 
         assertEquals(1, reponses.size());
         assertEquals("Alibi", reponses.get(0).nom());
@@ -163,15 +162,53 @@ class EtudiantServiceTest {
     }
 
     @Test
+    void listerRechercheLeNomCompletEnNormalisantLesEspaces() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.rechercherParNom("Sara El Amrani", tri))
+                .thenReturn(List.of(unEtudiant(1, "El Amrani", "Sara", "sara@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister("  Sara   El Amrani ");
+
+        assertEquals(1, reponses.size());
+        assertEquals("El Amrani", reponses.get(0).nom());
+    }
+
+    @Test
     void listerRenvoieUneListeVideSiAucunResultat() {
         Sort tri = Sort.by("nom", "prenom");
-        when(repository.findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase("zzz", "zzz", tri))
+        when(repository.rechercherParNom("zzz", tri))
                 .thenReturn(List.of());
 
         assertEquals(0, service.lister("zzz").size());
     }
 
-    // ---------- Modification  ----------
+    @Test
+    void listerAvecRechercheChaineVideRenvoieTousLesEtudiants() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.findAll(tri)).thenReturn(List.of(
+                unEtudiant(1, "Alaoui", "Rania", "rania@example.ma"),
+                unEtudiant(2, "Benali", "Yassine", "yassine@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister("");
+
+        assertEquals(2, reponses.size());
+        verify(repository, never()).rechercherParNom(any(), any());
+    }
+
+    @Test
+    void listerTransmetAuRepositoryLeTermeNettoyeEtLeTriParNomPuisPrenom() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.rechercherParNom("El Am", tri))
+                .thenReturn(List.of(unEtudiant(1, "El Amrani", "Sara", "sara@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister(" \t El \t Am  ");
+
+        assertEquals(1, reponses.size());
+        verify(repository).rechercherParNom("El Am", tri);
+        verify(repository, never()).findAll(any(Sort.class));
+    }
+
+    // ---------- Modification ----------
 
     @Test
     void modifierMetAJourLEtudiantAvecLesDonneesNettoyees() {
@@ -186,10 +223,10 @@ class EtudiantServiceTest {
         verify(repository).save(captor.capture());
         Etudiant saved = captor.getValue();
 
-        assertEquals(7, saved.getId());                                  
-        assertEquals("El Amrani", saved.getNom());                       
-        assertEquals("Sara", saved.getPrenom());                         
-        assertEquals("sara.elamrani@example.ma", saved.getEmail());      
+        assertEquals(7, saved.getId());
+        assertEquals("El Amrani", saved.getNom());
+        assertEquals("Sara", saved.getPrenom());
+        assertEquals("sara.elamrani@example.ma", saved.getEmail());
         assertEquals("+212 6 12 34 56 78", saved.getTelephone());
         assertEquals(LocalDate.of(2003, 4, 21), saved.getDateNaissance());
 
@@ -218,7 +255,6 @@ class EtudiantServiceTest {
         assertEquals(CodeErreur.EMAIL_DEJA_UTILISE, exception.getCode());
         verify(repository, never()).save(any());
     }
-
 
     // ---------- Suppression (IP-37) ----------
 

@@ -49,9 +49,12 @@ class EtudiantRepositoryIntegrationTest {
     }
 
     /**
-     * La contrainte uq_etudiant_email de la base est SENSIBLE à la casse : deux e-mails qui ne
-     * diffèrent que par la casse sont acceptés par PostgreSQL. L'insensibilité à la casse est
-     * assurée par le service, qui appelle existsByEmailIgnoreCase avant d'enregistrer.
+     * La contrainte uq_etudiant_email de la base est SENSIBLE à la casse : deux
+     * e-mails qui ne
+     * diffèrent que par la casse sont acceptés par PostgreSQL. L'insensibilité à la
+     * casse est
+     * assurée par le service, qui appelle existsByEmailIgnoreCase avant
+     * d'enregistrer.
      * Ce test documente ce comportement (le code applicatif n'est pas modifié).
      */
     @Test
@@ -83,10 +86,36 @@ class EtudiantRepositoryIntegrationTest {
         repository.saveAndFlush(parNom);
         repository.saveAndFlush(parPrenom);
 
-        List<Etudiant> resultat = repository.findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(
-                marqueur.toUpperCase(), marqueur.toUpperCase(), Sort.by("id"));
+        List<Etudiant> resultat = repository.rechercherParNom(
+                marqueur.toUpperCase(), Sort.by("id"));
 
         assertThat(resultat).extracting(Etudiant::getId)
                 .containsExactly(parNom.getId(), parPrenom.getId());
+    }
+
+    @Test
+    void rechercheParNomCompletDansLesDeuxOrdresSansTenirCompteDeLaCasse() {
+        String suffixe = unique();
+        Etudiant etudiant = etudiant();
+        etudiant.setNom("Nz" + suffixe);
+        etudiant.setPrenom("Pz" + suffixe);
+        repository.saveAndFlush(etudiant);
+
+        List<Etudiant> prenomPuisNom = repository.rechercherParNom(
+                ("Pz" + suffixe + " Nz" + suffixe).toUpperCase(), Sort.by("id"));
+        List<Etudiant> nomPuisPrenom = repository.rechercherParNom(
+                ("nz" + suffixe + " pz" + suffixe).toLowerCase(), Sort.by("id"));
+
+        assertThat(prenomPuisNom).extracting(Etudiant::getId).containsExactly(etudiant.getId());
+        assertThat(nomPuisPrenom).extracting(Etudiant::getId).containsExactly(etudiant.getId());
+    }
+
+    @Test
+    void rechercheSansResultatRenvoieUneListeVide() {
+        repository.saveAndFlush(etudiant());
+
+        List<Etudiant> resultat = repository.rechercherParNom("Introuvable-" + unique(), Sort.by("id"));
+
+        assertThat(resultat).isEmpty();
     }
 }

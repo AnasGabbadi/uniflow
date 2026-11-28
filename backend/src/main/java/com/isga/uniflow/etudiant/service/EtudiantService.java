@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Locale;
 
-
 @Service
 public class EtudiantService {
 
@@ -26,7 +25,6 @@ public class EtudiantService {
         this.etudiantRepository = etudiantRepository;
     }
 
-    
     @Transactional
     public EtudiantResponse creer(EtudiantRequest request) {
         String email = normaliserEmail(request.email());
@@ -40,13 +38,11 @@ public class EtudiantService {
         return EtudiantResponse.from(etudiantRepository.save(etudiant));
     }
 
-    
     @Transactional(readOnly = true)
     public EtudiantResponse trouverParId(Integer id) {
         return EtudiantResponse.from(chercher(id));
     }
 
-    
     @Transactional(readOnly = true)
     public List<EtudiantResponse> lister(String recherche) {
         List<Etudiant> etudiants;
@@ -54,15 +50,13 @@ public class EtudiantService {
         if (recherche == null || recherche.isBlank()) {
             etudiants = etudiantRepository.findAll(TRI_NOM_PRENOM);
         } else {
-            String terme = recherche.trim();
-            etudiants = etudiantRepository
-                    .findByNomContainingIgnoreCaseOrPrenomContainingIgnoreCase(terme, terme, TRI_NOM_PRENOM);
+            String terme = recherche.trim().replaceAll("\\s+", " "); // espaces multiples -> un seul
+            etudiants = etudiantRepository.rechercherParNom(terme, TRI_NOM_PRENOM);
         }
 
         return etudiants.stream().map(EtudiantResponse::from).toList();
     }
 
-    
     @Transactional
     public EtudiantResponse modifier(Integer id, EtudiantRequest request) {
         Etudiant etudiant = chercher(id);
@@ -76,13 +70,6 @@ public class EtudiantService {
         return EtudiantResponse.from(etudiantRepository.save(etudiant));
     }
 
-
-    /**
-     * IP-37 : supprime un étudiant. Ses inscriptions sont supprimées en cascade par la base
-     * (ON DELETE CASCADE, voir V1__init.sql).
-     *
-     * @throws RessourceIntrouvableException si l'identifiant est inconnu (HTTP 404)
-     */
     @Transactional
     public void supprimer(Integer id) {
         etudiantRepository.delete(chercher(id));
