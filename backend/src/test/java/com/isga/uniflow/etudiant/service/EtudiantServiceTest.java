@@ -182,6 +182,32 @@ class EtudiantServiceTest {
         assertEquals(0, service.lister("zzz").size());
     }
 
+    @Test
+    void listerAvecRechercheChaineVideRenvoieTousLesEtudiants() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.findAll(tri)).thenReturn(List.of(
+                unEtudiant(1, "Alaoui", "Rania", "rania@example.ma"),
+                unEtudiant(2, "Benali", "Yassine", "yassine@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister("");
+
+        assertEquals(2, reponses.size());
+        verify(repository, never()).rechercherParNom(any(), any());
+    }
+
+    @Test
+    void listerTransmetAuRepositoryLeTermeNettoyeEtLeTriParNomPuisPrenom() {
+        Sort tri = Sort.by("nom", "prenom");
+        when(repository.rechercherParNom("El Am", tri))
+                .thenReturn(List.of(unEtudiant(1, "El Amrani", "Sara", "sara@example.ma")));
+
+        List<EtudiantResponse> reponses = service.lister(" \t El \t Am  ");
+
+        assertEquals(1, reponses.size());
+        verify(repository).rechercherParNom("El Am", tri);
+        verify(repository, never()).findAll(any(Sort.class));
+    }
+
     // ---------- Modification ----------
 
     @Test
@@ -228,6 +254,29 @@ class EtudiantServiceTest {
 
         assertEquals(CodeErreur.EMAIL_DEJA_UTILISE, exception.getCode());
         verify(repository, never()).save(any());
+    }
+
+    // ---------- Suppression (IP-37) ----------
+
+    @Test
+    void supprimerSupprimeLEtudiantExistant() {
+        Etudiant existant = unEtudiant(7, "El Amrani", "Sara", "sara@example.ma");
+        when(repository.findById(7)).thenReturn(Optional.of(existant));
+
+        service.supprimer(7);
+
+        verify(repository).delete(existant);
+    }
+
+    @Test
+    void supprimerLeve404SiIdentifiantInconnu() {
+        when(repository.findById(99)).thenReturn(Optional.empty());
+
+        RessourceIntrouvableException exception = assertThrows(RessourceIntrouvableException.class,
+                () -> service.supprimer(99));
+
+        assertEquals("Aucun étudiant avec l'identifiant 99.", exception.getMessage());
+        verify(repository, never()).delete(any(Etudiant.class));
     }
 
     private Etudiant unEtudiant(int id, String nom, String prenom, String email) {

@@ -92,4 +92,30 @@ class EtudiantRepositoryIntegrationTest {
         assertThat(resultat).extracting(Etudiant::getId)
                 .containsExactly(parNom.getId(), parPrenom.getId());
     }
+
+    @Test
+    void rechercheParNomCompletDansLesDeuxOrdresSansTenirCompteDeLaCasse() {
+        String suffixe = unique();
+        Etudiant etudiant = etudiant();
+        etudiant.setNom("Nz" + suffixe);
+        etudiant.setPrenom("Pz" + suffixe);
+        repository.saveAndFlush(etudiant);
+
+        List<Etudiant> prenomPuisNom = repository.rechercherParNom(
+                ("Pz" + suffixe + " Nz" + suffixe).toUpperCase(), Sort.by("id"));
+        List<Etudiant> nomPuisPrenom = repository.rechercherParNom(
+                ("nz" + suffixe + " pz" + suffixe).toLowerCase(), Sort.by("id"));
+
+        assertThat(prenomPuisNom).extracting(Etudiant::getId).containsExactly(etudiant.getId());
+        assertThat(nomPuisPrenom).extracting(Etudiant::getId).containsExactly(etudiant.getId());
+    }
+
+    @Test
+    void rechercheSansResultatRenvoieUneListeVide() {
+        repository.saveAndFlush(etudiant());
+
+        List<Etudiant> resultat = repository.rechercherParNom("Introuvable-" + unique(), Sort.by("id"));
+
+        assertThat(resultat).isEmpty();
+    }
 }
