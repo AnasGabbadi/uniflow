@@ -1,0 +1,11 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: uniflow-config
+  namespace: uniflow
+data:
+  POSTGRES_DB: "uniflow"
+  POSTGRES_USER: "uniflow"
+  DB_URL: "jdbc:postgresql://postgres:5432/uniflow"
+  DB_USERNAME: "uniflow"
+  SERVER_PORT: "8080"
