@@ -1,0 +1,44 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uniflow-api
+  namespace: uniflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: uniflow-api
+  template:
+    metadata:
+      labels:
+        app: uniflow-api
+    spec:
+      containers:
+        - name: uniflow-api
+          image: uniflow:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: uniflow-config
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: uniflow-config
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: uniflow-secret
+                  key: DB_PASSWORD
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: uniflow-config
+                  key: SERVER_PORT
