@@ -1,8 +1,14 @@
 package com.isga.uniflow.formation.service;
 
 import com.isga.uniflow.formation.dto.FormationRequest;
+import com.isga.uniflow.etudiant.dto.EtudiantRequest;
+
 import com.isga.uniflow.formation.dto.FormationResponse;
+import com.isga.uniflow.etudiant.dto.EtudiantResponse;
+
 import com.isga.uniflow.formation.entity.Formation;
+import com.isga.uniflow.etudiant.entity.Etudiant;
+
 import com.isga.uniflow.formation.exception.FormationAvecInscriptionsException;
 import com.isga.uniflow.formation.exception.FormationCapaciteInsuffisanteException;
 import com.isga.uniflow.formation.exception.FormationDejaExistanteException;
@@ -31,7 +37,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Teste FormationService avec un repository simulé (Mockito) : pas de base de données.
+ * Teste FormationService avec un repository simulé (Mockito) : pas de base de
+ * données.
  */
 @ExtendWith(MockitoExtension.class)
 class FormationServiceTest {
@@ -60,15 +67,16 @@ class FormationServiceTest {
         verify(repository).save(captor.capture());
         Formation saved = captor.getValue();
 
-        assertEquals("Java avancé", saved.getIntitule());          // intitulé nettoyé (trim)
+        assertEquals("Java avancé", saved.getIntitule()); // intitulé nettoyé (trim)
         assertEquals("Spring Boot", saved.getDescription());
         assertEquals(40, saved.getDuree());
         assertEquals(20, saved.getCapaciteMax());
         assertEquals(LocalDate.of(2026, 12, 1), saved.getDateDebut());
         assertEquals(LocalDate.of(2026, 12, 20), saved.getDateFin());
-        assertEquals("FERMEE", saved.getStatut());                 // statut fourni respecté
+        assertEquals("FERMEE", saved.getStatut()); // statut fourni respecté
 
-        // La réponse reflète ce qui a été enregistré ; aucune inscription : toutes les places sont libres
+        // La réponse reflète ce qui a été enregistré ; aucune inscription : toutes les
+        // places sont libres
         assertEquals("Java avancé", response.intitule());
         assertEquals("FERMEE", response.statut());
         assertEquals(20, response.placesRestantes());
@@ -107,14 +115,14 @@ class FormationServiceTest {
         assertEquals("Spring Boot", response.description());
         assertEquals(LocalDate.of(2026, 12, 1), response.dateDebut());
         assertEquals(LocalDate.of(2026, 12, 20), response.dateFin());
-        assertEquals(13, response.placesRestantes());              // 20 - 7
+        assertEquals(13, response.placesRestantes()); // 20 - 7
     }
 
     @Test
     void trouverParIdNeDepassePasZeroPlaceRestante() {
         Formation formation = uneFormation(1, "Java avancé", 5);
         when(repository.findById(1)).thenReturn(Optional.of(formation));
-        when(repository.compterInscriptionsActives(1)).thenReturn(8L);   // données incohérentes
+        when(repository.compterInscriptionsActives(1)).thenReturn(8L); // données incohérentes
 
         assertEquals(0, service.trouverParId(1).placesRestantes());
     }
@@ -123,8 +131,8 @@ class FormationServiceTest {
     void trouverParIdLeveUneExceptionSiLIdentifiantEstInconnu() {
         when(repository.findById(99)).thenReturn(Optional.empty());
 
-        FormationIntrouvableException ex =
-                assertThrows(FormationIntrouvableException.class, () -> service.trouverParId(99));
+        FormationIntrouvableException ex = assertThrows(FormationIntrouvableException.class,
+                () -> service.trouverParId(99));
 
         assertEquals("Aucune formation avec l'identifiant 99", ex.getMessage());
     }
@@ -138,15 +146,15 @@ class FormationServiceTest {
         when(repository.findAll(Sort.by("id"))).thenReturn(List.of(f1, f2));
         // Seule la formation 1 a des inscriptions actives (4)
         when(repository.compterInscriptionsActivesParFormation())
-                .thenReturn(Collections.singletonList(new Object[]{1, 4L}));
+                .thenReturn(Collections.singletonList(new Object[] { 1, 4L }));
 
         List<FormationResponse> resultat = service.trouverToutes();
 
         assertEquals(2, resultat.size());
         assertEquals("Java avancé", resultat.get(0).intitule());
-        assertEquals(16, resultat.get(0).placesRestantes());       // 20 - 4
+        assertEquals(16, resultat.get(0).placesRestantes()); // 20 - 4
         assertEquals("Docker et Kubernetes", resultat.get(1).intitule());
-        assertEquals(25, resultat.get(1).placesRestantes());       // aucune inscription : 25 libres
+        assertEquals(25, resultat.get(1).placesRestantes()); // aucune inscription : 25 libres
     }
 
     @Test
@@ -170,14 +178,14 @@ class FormationServiceTest {
         FormationResponse response = service.modifier(1, requete("FERMEE"));
 
         assertEquals(1, response.id());
-        assertEquals("Java avancé", response.intitule());          // intitulé nettoyé (trim)
+        assertEquals("Java avancé", response.intitule()); // intitulé nettoyé (trim)
         assertEquals("Spring Boot", response.description());
         assertEquals(40, response.duree());
         assertEquals(20, response.capaciteMax());
         assertEquals(LocalDate.of(2026, 12, 1), response.dateDebut());
         assertEquals(LocalDate.of(2026, 12, 20), response.dateFin());
         assertEquals("FERMEE", response.statut());
-        assertEquals(14, response.placesRestantes());              // 20 - 6
+        assertEquals(14, response.placesRestantes()); // 20 - 6
     }
 
     @Test
@@ -199,7 +207,7 @@ class FormationServiceTest {
         Formation formation = uneFormation(1, "Java avancé", 30);
         when(repository.findById(1)).thenReturn(Optional.of(formation));
         when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
-        when(repository.compterInscriptionsActives(1)).thenReturn(20L);   // capacité demandée : 20
+        when(repository.compterInscriptionsActives(1)).thenReturn(20L); // capacité demandée : 20
         when(repository.save(any(Formation.class))).thenAnswer(inv -> inv.getArgument(0));
 
         FormationResponse response = service.modifier(1, requete(null));
@@ -213,7 +221,7 @@ class FormationServiceTest {
         Formation formation = uneFormation(1, "Java avancé", 30);
         when(repository.findById(1)).thenReturn(Optional.of(formation));
         when(repository.existsByIntituleIgnoreCaseAndIdNot("Java avancé", 1)).thenReturn(false);
-        when(repository.compterInscriptionsActives(1)).thenReturn(21L);   // capacité demandée : 20
+        when(repository.compterInscriptionsActives(1)).thenReturn(21L); // capacité demandée : 20
 
         FormationCapaciteInsuffisanteException ex = assertThrows(
                 FormationCapaciteInsuffisanteException.class, () -> service.modifier(1, requete(null)));
@@ -242,7 +250,10 @@ class FormationServiceTest {
 
     // ---------- Utilitaire ----------
 
-    /** Formation réelle avec un id fixé (l'entité n'a pas de setId : on passe par réflexion). */
+    /**
+     * Formation réelle avec un id fixé (l'entité n'a pas de setId : on passe par
+     * réflexion).
+     */
     private Formation uneFormation(int id, String intitule, int capaciteMax) {
         Formation f = new Formation();
         ReflectionTestUtils.setField(f, "id", id);
@@ -286,10 +297,53 @@ class FormationServiceTest {
         when(repository.findById(5)).thenReturn(Optional.of(formation));
         when(repository.compterToutesInscriptions(5)).thenReturn(3L);
 
-        FormationAvecInscriptionsException ex =
-                assertThrows(FormationAvecInscriptionsException.class, () -> service.supprimer(5));
+        FormationAvecInscriptionsException ex = assertThrows(FormationAvecInscriptionsException.class,
+                () -> service.supprimer(5));
 
         assertEquals("La formation 5 ne peut pas être supprimée : elle compte 3 inscription(s)", ex.getMessage());
         verify(repository, never()).delete(any(Formation.class));
+    }
+
+    // ---------- Étudiants d'une formation ----------
+
+    @Test
+    void trouverEtudiantsRenvoieLesEtudiantsInscrits() {
+        when(repository.existsById(5)).thenReturn(true);
+        when(repository.trouverEtudiantsActifs(5)).thenReturn(List.of(
+                unEtudiant(1, "Alaoui", "Rania", "rania@example.ma"),
+                unEtudiant(2, "Benali", "Yassine", "yassine@example.ma")));
+
+        List<EtudiantResponse> reponses = service.trouverEtudiants(5);
+
+        assertEquals(2, reponses.size());
+        assertEquals("Alaoui", reponses.get(0).nom());
+        assertEquals("rania@example.ma", reponses.get(0).email());
+        assertEquals("Benali", reponses.get(1).nom());
+    }
+
+    @Test
+    void trouverEtudiantsRenvoieUneListeVideSiPersonneNEstInscrit() {
+        when(repository.existsById(5)).thenReturn(true);
+        when(repository.trouverEtudiantsActifs(5)).thenReturn(List.of());
+
+        assertTrue(service.trouverEtudiants(5).isEmpty());
+    }
+
+    @Test
+    void trouverEtudiantsLeveUneExceptionSiLaFormationEstInconnue() {
+        when(repository.existsById(99)).thenReturn(false);
+
+        assertThrows(FormationIntrouvableException.class, () -> service.trouverEtudiants(99));
+
+        verify(repository, never()).trouverEtudiantsActifs(any());
+    }
+
+    private Etudiant unEtudiant(int id, String nom, String prenom, String email) {
+        Etudiant e = new Etudiant();
+        ReflectionTestUtils.setField(e, "id", id);
+        e.setNom(nom);
+        e.setPrenom(prenom);
+        e.setEmail(email);
+        return e;
     }
 }
